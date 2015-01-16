@@ -66,7 +66,8 @@ var __meta__ = {
                         if (typeof widget.setDataSource == "function") {
                             widget.setDataSource(toDataSource(mew, type));
                         }
-                    } else {
+                    } else if (!(mew instanceof kendo.data.DataSource)) {
+
                         if (widget.dataSource && typeof widget.dataSource.data == "function") {
                             widget.dataSource.data(mew);
                         }
@@ -238,7 +239,9 @@ var __meta__ = {
                 bindToNgModel(object, scope, element, ngModel, ngForm);
             }
 
-            propagateClassToWidgetWrapper(object, element);
+            if (object) {
+                propagateClassToWidgetWrapper(object, element);
+            }
 
             return object;
         }
