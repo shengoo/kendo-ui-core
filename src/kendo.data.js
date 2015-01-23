@@ -2238,9 +2238,11 @@ var __meta__ = {
                     this._online = value;
 
                     if (value) {
-                        this.sync();
+                        return this.sync();
                     }
                 }
+
+                return $.Deferred().resolve().promise();
             } else {
                 return this._online;
             }
@@ -2577,12 +2579,13 @@ var __meta__ = {
                 updated = [],
                 destroyed = that._destroyed,
                 data = that._flatData(that._data);
-            var promise;
+
+            var promise = $.Deferred().resolve().promise();
 
             if (that.online()) {
 
                 if (!that.reader.model) {
-                    return;
+                    return promise;
                 }
 
                 for (idx = 0, length = data.length; idx < length; idx++) {
@@ -2617,8 +2620,6 @@ var __meta__ = {
                 that._storeData(true);
 
                 that._change({ action: "sync" });
-
-                promise = $.Deferred().resolve().promise();
             }
 
             return promise;
@@ -2636,6 +2637,10 @@ var __meta__ = {
                 if (that.options.serverPaging) {
                     that._total = that._pristineTotal;
                 }
+
+                that._ranges = [];
+                that._addRange(that._data);
+
                 that._change();
             }
         },
@@ -3103,7 +3108,7 @@ var __meta__ = {
                     data.wrapAll(data, data);
                 }
             } else {
-                var arrayType = that.pageSize() ? LazyObservableArray : ObservableArray;
+                var arrayType = that.pageSize() && !that.options.serverPaging ? LazyObservableArray : ObservableArray;
                 data = new arrayType(data, that.reader.model);
                 data.parent = function() { return that.parent(); };
             }
