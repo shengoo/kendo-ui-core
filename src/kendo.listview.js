@@ -598,6 +598,11 @@ var __meta__ = {
                dataSource = that.dataSource,
                data = that._modelFromElement(item);
 
+           if (that.editable) {
+               dataSource.cancelChanges(that._modelFromElement(that.editable.element));
+               that._closeEditable(false);
+           }
+
            if (!that.trigger(REMOVE, { model: data, item: item })) {
                item.hide();
                dataSource.remove(data);

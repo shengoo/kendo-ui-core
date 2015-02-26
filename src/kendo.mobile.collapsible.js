@@ -17,12 +17,18 @@ var __meta__ = {
         COLLAPSIBLE = "km-collapsible",
         HEADER = "km-collapsible-header",
         CONTENT = "km-collapsible-content",
+        INSET = "km-collapsibleinset",
         HEADER_WRAPPER = "<div data-role='collapsible-header' class='" + HEADER + "'></div>",
         CONTENT_WRAPPER = "<div data-role='collapsible-content' class='" + CONTENT + "'></div>",
 
         COLLAPSED = "km-collapsed",
         EXPANDED = "km-expanded",
         ANIMATED = "km-animated",
+
+        //icon position
+        LEFT = "left",
+        RIGHT = "right",
+        TOP = "top",
 
         //events
         EXAPND = "expand",
@@ -46,6 +52,10 @@ var __meta__ = {
 
             container.addClass(that.options.collapsed ? COLLAPSED : EXPANDED);
 
+            if (that.options.inset) {
+                container.addClass(INSET);
+            }
+
             if (that.options.animation) {
                 that.content.addClass(ANIMATED);
                 that.content.height(0);
@@ -62,9 +72,11 @@ var __meta__ = {
         options: {
             name: "Collapsible",
             collapsed: true,
-            collapseIcon: "minus",
-            expandIcon: "plus",
-            animation: true
+            collapseIcon: "arrow-n",
+            expandIcon: "arrow-s",
+            iconPosition: LEFT,
+            animation: true,
+            inset: false
         },
 
         destroy: function() {
@@ -74,6 +86,7 @@ var __meta__ = {
 
         expand: function(instant) {
             var icon = this.options.collapseIcon,
+                content = this.content,
                 ios = kendo.support.mobileOS.ios;
 
             if (!this.trigger(EXAPND)) {
@@ -83,19 +96,22 @@ var __meta__ = {
                 this.element.removeClass(COLLAPSED).addClass(EXPANDED);
 
                 if (this.options.animation && !instant) {
-                    if (ios) { this.content.removeClass(ANIMATED); } //required to get the height of the content on iOS
-                    this.content.height(this._getContentHeight());
-                    if (ios) { this.content.addClass(ANIMATED); }
+                    content.off("transitionend");
+                    content.show();
+                    if (ios) { content.removeClass(ANIMATED); } //required to get the height of the content on iOS
+                    content.height(this._getContentHeight());
+                    if (ios) { content.addClass(ANIMATED); }
 
-                    kendo.resize(this.content);
+                    kendo.resize(content);
                 } else {
-                    this.content.show();
+                    content.show();
                 }
             }
         },
 
         collapse: function(instant) {
-            var icon = this.options.expandIcon;
+            var icon = this.options.expandIcon,
+                content = this.content;
 
             if (!this.trigger(COLLAPSE)) {
                 if (icon) {
@@ -104,9 +120,10 @@ var __meta__ = {
                 this.element.removeClass(EXPANDED).addClass(COLLAPSED);
 
                 if (this.options.animation && !instant) {
-                    this.content.height(0);
+                    content.one("transitionend", function() { content.hide(); });
+                    content.height(0);
                 } else {
-                    this.content.hide();
+                    content.hide();
                 }
             }
         },
@@ -132,7 +149,8 @@ var __meta__ = {
         _buildHeader: function() {
             var header = this.element.children(":header").wrapAll(HEADER_WRAPPER),
                 iconSpan = $('<span class="km-icon"/>'),
-                icon = this.options.collapsed ? this.options.expandIcon : this.options.collapseIcon;
+                icon = this.options.collapsed ? this.options.expandIcon : this.options.collapseIcon,
+                iconPosition = this.options.iconPosition;
 
             if (icon) {
                 header.prepend(iconSpan);
@@ -140,6 +158,7 @@ var __meta__ = {
             }
 
             this.header = header.parent();
+            this.header.addClass("km-icon-" + iconPosition);
         },
 
         _getContentHeight: function() {

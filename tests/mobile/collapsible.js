@@ -74,7 +74,7 @@
     test("appends icon span to the header element", 1, function() {
         var panel = $("#collapsible").kendoMobileCollapsible().data("kendoMobileCollapsible");
 
-        ok(panel.header.find(".km-icon").hasClass("km-plus"));
+        ok(panel.header.find(".km-icon").hasClass("km-arrow-s"));
     });
 
     test("changes the icon after user expands the content", 1, function() {
@@ -82,7 +82,7 @@
 
         click(panel.header);
 
-        ok(panel.header.find(".km-icon").hasClass("km-minus"));
+        ok(panel.header.find(".km-icon").hasClass("km-arrow-n"));
     });
 
     test("changes the icon after user collapses the content", 1, function() {
@@ -92,7 +92,7 @@
 
         click(panel.header);
 
-        ok(panel.header.find(".km-icon").hasClass("km-plus"));
+        ok(panel.header.find(".km-icon").hasClass("km-arrow-s"));
     });
 
     test("accepts icon class through the options", 2, function() {
@@ -120,6 +120,28 @@
         }).data("kendoMobileCollapsible");
 
         ok(!panel.content.hasClass("km-animated"));
+    });
+
+    test("adds km-collapsibleinset class when inset option is set to true", 1, function() {
+        var panel = $("#collapsible").kendoMobileCollapsible({
+            inset: true
+        }).data("kendoMobileCollapsible");
+
+        ok(panel.element.hasClass("km-collapsibleinset"));
+    });
+
+    test("default icon position is left", 1, function() {
+        var panel = $("#collapsible").kendoMobileCollapsible().data("kendoMobileCollapsible");
+
+        ok(panel.header.hasClass("km-icon-left"));
+    });
+
+    test("icon position can be configured through the options", 1, function() {
+        var panel = $("#collapsible").kendoMobileCollapsible({
+            iconPosition: "right"
+        }).data("kendoMobileCollapsible");
+
+        ok(panel.header.hasClass("km-icon-right"));
     });
 
     /* UI interactions */

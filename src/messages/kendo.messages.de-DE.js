@@ -272,6 +272,16 @@ $.extend(true, kendo.ui.Groupable.prototype.options.messages,{
 });
 }
 
+/* NumericTextBox messages */
+
+if (kendo.ui.NumericTextBox) {
+kendo.ui.NumericTextBox.prototype.options =
+$.extend(true, kendo.ui.NumericTextBox.prototype.options,{
+  "upArrowText": "Wert erhöhen",
+  "downArrowText": "Wert verringern"
+});
+}
+
 /* Pager messages */
 
 if (kendo.ui.Pager) {
@@ -297,7 +307,7 @@ if (kendo.ui.Upload) {
 kendo.ui.Upload.prototype.options.localization =
 $.extend(true, kendo.ui.Upload.prototype.options.localization,{
   "cancel": "Beenden",
-  "dropFilesHere": "Dateien hier fallen lassen zum hochladen",
+  "dropFilesHere": "Dateien hier fallen lassen zum Hochladen",
   "remove": "Löschen",
   "retry": "Wiederholen",
   "select": "Wählen Sie...",
@@ -305,8 +315,8 @@ $.extend(true, kendo.ui.Upload.prototype.options.localization,{
   "statusUploaded": "hochgeladet",
   "statusUploading": "hochladen",
   "uploadSelectedFiles": "Dateien hochladen",
-  "headerStatusUploaded": "Done",
-  "headerStatusUploading": "Uploading..."
+  "headerStatusUploaded": "Abgeschlossen",
+  "headerStatusUploading": "Hochladen..."
 });
 }
 
@@ -334,7 +344,7 @@ $.extend(true, kendo.ui.Scheduler.prototype.options.messages,{
     "timezoneEditorButton": "Zeitzone",
     "timezoneEditorTitle": "Zeitzonen",
     "title": "Titel",
-    "noTimezone": "No timezone"
+    "noTimezone": "Keine Zeitzone"
   },
   "event": "Termin",
   "recurrenceMessages": {
@@ -355,11 +365,11 @@ $.extend(true, kendo.ui.Scheduler.prototype.options.messages,{
     "day": "Tag",
     "month": "Monat",
     "week": "Woche",
-    "workWeek": "Work Week"
+    "workWeek": "Arbeitswoche"
   },
   "deleteWindowTitle": "Termin löschen",
-  "showFullDay": "Zeigen ganztags",
-  "showWorkDay": "Zeigen Geschäftszeiten"
+  "showFullDay": "Ganzen Tag anzeigen",
+  "showWorkDay": "Geschäftszeiten anzeigen"
 });
 }
 

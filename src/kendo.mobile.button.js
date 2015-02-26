@@ -40,17 +40,25 @@ var __meta__ = {
             var that = this;
 
             Widget.fn.init.call(that, element, options);
+            var useTap = that.options.clickOn === "up";
 
             that._wrap();
             that._style();
+
+            if (!useTap) {
+                that.element.attr("data-navigate-on-press", true);
+            }
 
             that.options.enable = that.options.enable && !that.element.attr(DISABLED);
             that.enable(that.options.enable);
 
             that._userEvents = new kendo.UserEvents(that.element, {
                 press: function(e) { that._activate(e); },
-                tap: function(e) { that._release(e); },
                 release: function(e) { highlightButton(that, e, false); }
+            });
+
+            that._userEvents.bind(useTap ? "tap" : "press", function(e) {
+                that._release(e);
             });
 
             if (ANDROID3UP) {
@@ -72,6 +80,7 @@ var __meta__ = {
             icon: "",
             style: "",
             badge: "",
+            clickOn: "up",
             enable: true
         },
 

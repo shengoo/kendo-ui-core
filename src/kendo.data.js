@@ -198,7 +198,7 @@ var __meta__ = {
                 });
 
                 for (i = 0, len = result.length; i < len; i++) {
-                    if (result[i].children) {
+                    if (result[i] && result[i].children) {
                         result[i].unbind(CHANGE);
                     }
                 }
@@ -979,6 +979,17 @@ var __meta__ = {
         }
 
         return {
+            quote: function(value) {
+                if (value && value.getTime) {
+                    return "new Date(" + value.getTime() + ")";
+                }
+
+                if (typeof value == "string") {
+                    return "'" + quote(value) + "'";
+                }
+
+                return "" + value;
+            },
             eq: function(a, b, ignore) {
                 return operator("==", a, b, ignore);
             },
@@ -1102,7 +1113,7 @@ var __meta__ = {
                 }
 
                 if (typeof operator === FUNCTION) {
-                    filter = "__o[" + operatorFunctions.length + "](" + expr + ", " + filter.value + ")";
+                    filter = "__o[" + operatorFunctions.length + "](" + expr + ", " + operators.quote(filter.value) + ")";
                     operatorFunctions.push(operator);
                 } else {
                     filter = operators[(operator || "eq").toLowerCase()](expr, filter.value, filter.ignoreCase !== undefined? filter.ignoreCase : true);
@@ -3405,6 +3416,7 @@ var __meta__ = {
             }
 
             that._query({ filter: val, page: 1 });
+            that.trigger("reset");
         },
 
         group: function(val) {
@@ -4546,7 +4558,7 @@ var __meta__ = {
             for (var i = 0; i < take; i++) {
                 item = buffer.at(skip + i);
 
-                if (item === undefined) {
+                if (item === null) {
                     break;
                 }
 

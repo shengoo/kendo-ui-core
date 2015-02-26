@@ -4014,8 +4014,8 @@ function pad(number, digits, end) {
 
     kendo.antiForgeryTokens = function() {
         var tokens = { },
-            csrf_token = $("meta[name=csrf-token]").attr("content"),
-            csrf_param = $("meta[name=csrf-param]").attr("content");
+            csrf_token = $("meta[name=csrf-token],meta[name=_csrf]").attr("content"),
+            csrf_param = $("meta[name=csrf-param],meta[name=_csrf_header]").attr("content");
 
         $("input[name^='__RequestVerificationToken']").each(function() {
             tokens[this.name] = this.value;
@@ -4030,10 +4030,11 @@ function pad(number, digits, end) {
 
     // kendo.saveAs -----------------------------------------------
     (function() {
-        function postToProxy(dataURI, fileName, proxyURL) {
+        function postToProxy(dataURI, fileName, proxyURL, proxyTarget) {
             var form = $("<form>").attr({
                 action: proxyURL,
-                method: "POST"
+                method: "POST",
+                target: proxyTarget
             });
 
             var data = kendo.antiForgeryTokens();
@@ -4103,7 +4104,7 @@ function pad(number, digits, end) {
                 }
             }
 
-            save(options.dataURI, options.fileName, options.proxyURL);
+            save(options.dataURI, options.fileName, options.proxyURL, options.proxyTarget);
         };
     })();
 })(jQuery, window);
