@@ -536,6 +536,12 @@
     test("default page sizes", function() {
         var pager = setup({}, { pageSizes: true });
 
+        equal(pager.find(".k-pager-sizes select option").text(), "All51020");
+    });
+
+    test("all-pages option can be removed", function() {
+        var pager = setup({}, { pageSizes: [5, 10, 20] });
+
         equal(pager.find(".k-pager-sizes select option").text(), "51020");
     });
 
@@ -557,6 +563,14 @@
         dataSource.pageSize(2);
 
         equal(pager.find(".k-pager-sizes select").val(), "2");
+    });
+
+    test("changing page size to include all items selects all pages", function() {
+        var pager = setup({}, { pageSizes: ["all", 1, 2] });
+
+        dataSource.pageSize(5);
+
+        equal(pager.find(".k-pager-sizes select").kendoDropDownList("text"), "All");
     });
 
     test("changing the page size of the data source selects the corresponding option", 2, function() {
@@ -583,6 +597,16 @@
         pager.find(".k-pager-sizes select").val(2).trigger("change");
 
         equal(dataSource.pageSize(), 2);
+    });
+
+    test("selecting all pages from the select changes the page size in the data source", function() {
+        var pager = setup({}, { pageSizes: ["all", 1, 2] });
+        dataSource.read();
+
+        var select = pager.find(".k-pager-sizes select");
+        select.val("all").trigger("change");
+
+        equal(dataSource.pageSize(), 5);
     });
 
     test("displays refresh button", function() {

@@ -69,7 +69,7 @@ test("MultiSelect do not open on tag delete", function() {
 
     var multiselect = new MultiSelect(select);
 
-    multiselect.tagList.find(".k-delete").click();
+    multiselect.tagList.find(".k-i-close").click();
 
     ok(!multiselect.popup.visible());
 });
@@ -80,7 +80,7 @@ test("MultiSelect do not focus on delete", function() {
 
     var multiselect = new MultiSelect(select);
 
-    multiselect.tagList.find(".k-delete").mousedown();
+    multiselect.tagList.find(".k-i-close").mousedown();
 
     notEqual(multiselect.input[0], document.activeElement);
 });
@@ -93,18 +93,6 @@ test("MultiSelect selects item on click", function() {
     multiselect.ul.children().eq(1).click();
 
     ok(multiselect.tagList.children(":first")[0]);
-});
-
-test("MultiSelect hides selected item", function() {
-    populateSelect();
-    var multiselect = new MultiSelect(select);
-    multiselect.input.mousedown();
-
-    var item = multiselect.ul.children().eq(1);
-
-    item.click();
-
-    equal(item[0].style.display, "none");
 });
 
 test("MultiSelect hides popup on click", function() {
@@ -129,7 +117,7 @@ test("MultiSelect deletes tag on delete button click", function() {
     multiselect.ul.children().eq(0).click();
 
     var tag = multiselect.tagList.children().first();
-    tag.find(".k-delete").click();
+    tag.find(".k-i-close").click();
 
     ok(!tag.parent()[0]);
 });
@@ -143,7 +131,7 @@ test("MultiSelect shows clicked item on delete", function() {
     var item = multiselect.ul.children().eq(1).click();
     multiselect.ul.children().eq(0).click();
 
-    multiselect.tagList.children().first().find(".k-delete").click();
+    multiselect.tagList.children().first().find(".k-i-close").click();
     multiselect.popup.open();
 
     notEqual(item[0].style.display, "none");
@@ -164,6 +152,7 @@ test("MultiSelect selects corresponding option", function() {
     populateSelect();
 
     var multiselect = new MultiSelect(select);
+
     multiselect.input.mousedown();
     multiselect.ul.children().eq(1).click();
 
@@ -177,7 +166,7 @@ test("MultiSelect unselects option", function() {
     multiselect.input.mousedown();
     multiselect.ul.children().eq(1).click();
 
-    multiselect.tagList.children().first().find(".k-delete").click();
+    multiselect.tagList.children().first().find(".k-i-close").click();
 
     ok(!select[0].children[1].selected);
 });
@@ -191,7 +180,7 @@ test("MultiSelect persists selected data items", function() {
     multiselect.ul.children().eq(1).click();
 
     //TODO: use method instead of _dataItems
-    equal(multiselect._dataItems.length, 1);
+    equal(multiselect.dataItems().length, 1);
 });
 
 test("MultiSelect removes corresponding data item", function() {
@@ -204,11 +193,11 @@ test("MultiSelect removes corresponding data item", function() {
     multiselect.ul.children().eq(0).click();
 
     //unselect item
-    multiselect.tagList.children().first().find(".k-delete").click();
+    multiselect.tagList.children().first().find(".k-i-close").click();
 
     //TODO: use method instead of _dataItems
-    equal(multiselect._dataItems.length, 1);
-    equal(multiselect._dataItems[0].value, 0);
+    equal(multiselect.dataItems().length, 1);
+    equal(multiselect.dataItems()[0].value, 0);
 });
 
 test("MultiSelect clears input on selection", function() {
@@ -227,19 +216,19 @@ test("MultiSelect clears input on selection", function() {
 test("MultiSelect clears input on blur", function() {
     var multiselect = new MultiSelect(select);
 
-    multiselect.input.focus().val("test").blur();
+    multiselect.input.focus().val("test").focusout();
 
     equal(multiselect.input.val(), "");
 });
 
-test("MultiSelect shows all available items if input is clear", function() {
+test("MultiSelect shows all available items if input is cleared", function() {
     populateSelect();
     var multiselect = new MultiSelect(select);
 
     multiselect.input.focus().val("nothing");
     multiselect.search("nothing");
 
-    multiselect.input.blur();
+    multiselect.input.focusout();
 
     multiselect.open();
 
@@ -264,7 +253,7 @@ test("MultiSelect focuses input on click", function() {
     multiselect.ul.children().eq(0).click();
     multiselect.open();
 
-    multiselect.tagList.children().first().find(".k-delete").click();
+    multiselect.tagList.children().first().find(".k-i-close").click();
 
     ok(!multiselect.popup.visible());
 });
@@ -306,12 +295,35 @@ test("MultiSelect unselects custom option", function() {
         value: ["item1", "item2"]
     });
 
+    multiselect.listView.filter(true);
     multiselect.dataSource.data(["item3", "item4"]);
+
     multiselect.ul.children().eq(0).click();
+    multiselect.tagList.children().first().find(".k-i-close").click();
 
-    multiselect.tagList.children().first().find(".k-delete").click();
+    ok(select[0].children[0].selected); //item3
+    ok(!select[0].children[1].selected); //item4
+    ok(!select[0].children[2].selected); //item1
+    ok(select[0].children[3].selected); //item2
+});
 
-    ok(!select[0].children[2].selected);
+test("MultiSelect removes value matching custom option", function() {
+    var multiselect = new MultiSelect(select, {
+        dataSource: ["item1", "item2"],
+        value: ["item1", "item2"]
+    });
+
+    multiselect.listView.filter(true);
+    multiselect.dataSource.data(["item3", "item4"]);
+
+    multiselect.ul.children().eq(0).click();
+    multiselect.tagList.children().first().find(".k-i-close").click();
+
+    var value = multiselect.value();
+
+    equal(value.length, 2);
+    equal(value[0], "item2");
+    equal(value[1], "item3");
 });
 
 test("MultiSelect closes popup on blur", function() {
@@ -320,37 +332,9 @@ test("MultiSelect closes popup on blur", function() {
 
     multiselect.input.focus();
     multiselect.open();
-    multiselect.input.blur();
+    multiselect.input.focusout();
 
     ok(!multiselect.popup.visible());
-});
-
-test("MultiSelect sets height on select", function() {
-    populateSelect();
-    var multiselect = new MultiSelect(select);
-
-    stub(multiselect, {
-        _height: multiselect._height
-    });
-
-    multiselect._select(0);
-
-    equal(multiselect.calls("_height"), 1);
-});
-
-test("MultiSelect sets height on unselect", function() {
-    populateSelect();
-    var multiselect = new MultiSelect(select, {
-        value: "0"
-    });
-
-    stub(multiselect, {
-        _height: multiselect._height
-    });
-
-    multiselect._unselect(multiselect.tagList.children(":first"));
-
-    equal(multiselect.calls("_height"), 1);
 });
 
 test("MultiSelect honours minLength on click", function() {
@@ -378,7 +362,7 @@ test("MultiSelect triggers blur event of the hidden element", 1, function() {
         ok(true);
     });
 
-    multiselect.input.focus().blur();
+    multiselect.input.focus().focusout();
 });
 
 test("MultiSelect calls dataSource fetch if autoBind:false", 1, function() {
@@ -409,19 +393,84 @@ test("MultiSelect does not prevent default when click input", 0, function() {
 
 test("MultiSelect add focused class on focus", function() {
     var multiselect = new MultiSelect(select);
+    debugger;
 
     multiselect.wrapper.mousedown();
 
     ok(multiselect.wrapper.hasClass("k-state-focused"));
 });
 
-test("MultiSelect removes focused clas on blur", function() {
+return;
+
+test("MultiSelect removes focused class on blur", function() {
     var multiselect = new MultiSelect(select);
 
     multiselect.input.focus();
-    multiselect.input.blur();
+    multiselect.input.focusout();
 
     ok(!multiselect.wrapper.hasClass("k-state-focused"));
+});
+
+test("MultiSelect removes selected item from tag list (filtered)", function() {
+    populateSelect();
+    var multiselect = new MultiSelect(select, {
+        value: ["1", "2"]
+    });
+
+    multiselect.search("Option2");
+    multiselect.ul.find(".k-state-selected").click();
+
+    var tags = multiselect.tagList.children();
+
+    equal(tags.length, 1);
+    equal(tags.children(":first").text(), "Option1");
+});
+
+test("MultiSelect persists selected tags on rebind", function() {
+    populateSelect();
+    var multiselect = new MultiSelect(select, {
+        value: ["1", "2"]
+    });
+
+    multiselect.search("Option2");
+    multiselect.ul.find(".k-state-selected").click();
+    multiselect.open();
+
+    var tags = multiselect.tagList.children();
+
+    equal(tags.length, 1);
+    equal(tags.children(":first").text(), "Option1");
+});
+
+test("MultiSelect unselects item on tag remove", function() {
+    populateSelect();
+    var multiselect = new MultiSelect(select, {
+        dataSource: ["foo", "bar", "baz"],
+        value: ["foo"]
+    });
+
+    multiselect.tagList.children(":first").find(".k-i-close").click();
+
+    var selectedItems = multiselect.ul.children(".k-state-selected");
+
+    equal(selectedItems.length, 0);
+});
+
+test("MultiSelect removes selected item that exist in datasource from tagList (filtered)", function() {
+    populateSelect();
+    var multiselect = new MultiSelect(select, {
+        dataSource: ["foo", "bar", "baz", "item1", "item2"],
+        value: ["item1", "bar"]
+    });
+
+    multiselect.search("item");
+    multiselect.ul.children(":last").click();
+    multiselect.tagList.children(":first").find(".k-i-close").click();
+
+    var tags = multiselect.tagList.children();
+
+    equal(tags.length, 2);
+    equal(tags.children(":first").text(), "bar");
 });
 
 })();

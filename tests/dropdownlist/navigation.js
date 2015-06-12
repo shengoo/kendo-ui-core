@@ -11,6 +11,7 @@
             $.fn.press = function(key) {
                 return this.trigger({ type: "keydown", keyCode: key } );
             };
+
             input = $("<input />").appendTo(QUnit.fixture);
         },
         teardown: function() {
@@ -130,6 +131,19 @@
 
     });
 
+    test("press down arrow fetches the source and select first item", function() {
+        var dropdownlist = new DropDownList(input, {
+            autoBind: false,
+            dataSource: new kendo.data.DataSource({
+                data: data
+            })
+        });
+
+        dropdownlist.wrapper.focus().press(keys.DOWN);
+
+        equal(dropdownlist.select(), 0);
+    });
+
     test("press up arrow should focus prev item and update text and value", function() {
         var dropdownlist = input.kendoDropDownList(data).data("kendoDropDownList");
 
@@ -155,6 +169,21 @@
         ok(dropdownlist.ul.children().eq(0).hasClass(SELECTED));
     });
 
+    test("press right arrow should allow default when filter input is focused", function() {
+        var dropdownlist = input.kendoDropDownList({
+            dataSource: data,
+            filter: "startswith"
+        }).data("kendoDropDownList");
+
+        dropdownlist.wrapper.focus();
+        dropdownlist.open();
+
+        dropdownlist.filterInput.focus().val("test");
+        dropdownlist.filterInput.press(keys.RIGHT);
+
+        ok(dropdownlist.ul.children().eq(0).hasClass(SELECTED));
+    });
+
     test("press up arrow when first item is selected should not do anything", function() {
         var dropdownlist = input.kendoDropDownList(data).data("kendoDropDownList");
 
@@ -167,8 +196,6 @@
 
     test("press home should focus first item and update text and value", function() {
         var dropdownlist = input.kendoDropDownList(data).data("kendoDropDownList");
-
-        dropdownlist.dataSource.read();
 
         dropdownlist.select(1);
         dropdownlist.wrapper.focus().press(keys.HOME);
@@ -206,13 +233,31 @@
         dropdownlist.wrapper.focus().press(keys.ENTER);
     });
 
+    test("press enter should keep popup opened if filter is typed and source is not loaded yet", 1, function() {
+        var dropdownlist = new DropDownList(input, {
+            animation: false,
+            dataSource: data,
+            delay: 500,
+            filter: "startswith"
+        });
+
+        dropdownlist.open();
+        dropdownlist.filterInput.focus().val("test");
+        dropdownlist.filterInput.trigger("keydown");
+
+        dropdownlist.filterInput.press(keys.ENTER);
+
+        ok(dropdownlist.popup.visible());
+    });
+
     test("press enter should select current item", 3, function() {
         var dropdownlist = input.kendoDropDownList(data).data("kendoDropDownList");
 
         dropdownlist.popup.bind("close", function(){
-            equal(dropdownlist._current.index(), 1);
-            ok(dropdownlist._current.hasClass("k-state-focused"));
-            ok(dropdownlist._current.hasClass("k-state-selected"));
+            var current = dropdownlist.current();
+            equal(current.index(), 1);
+            ok(current.hasClass("k-state-focused"));
+            ok(current.hasClass("k-state-selected"));
         });
 
         dropdownlist.popup.open();
@@ -253,11 +298,19 @@
 
         dropdownlist.ul.show();
 
-        equal(dropdownlist._current.index(), 1);
-        ok(dropdownlist._current.hasClass("k-state-focused"));
-        ok(dropdownlist._current.hasClass("k-state-selected"));
+        var current = dropdownlist.current();
+        equal(current.index(), 1);
+        ok(current.hasClass("k-state-focused"));
+        ok(current.hasClass("k-state-selected"));
     });
 
+    test("press enter should not throw an error", 1, function() {
+        var dropdownlist = input.kendoDropDownList().data("kendoDropDownList");
+
+        dropdownlist.wrapper.focus().press(keys.ENTER);
+
+        ok(true);
+    });
 
     test("press esc should close popup when no change in selection", 1, function() {
         var dropdownlist = input.kendoDropDownList(data).data("kendoDropDownList");
@@ -272,18 +325,17 @@
         dropdownlist.wrapper.focus().press(keys.ESC);
     });
 
-    test("pressing enter calls _blur", function() {
-        var blurWasCalled, dropdownlist = new DropDownList(input, {
+    test("pressing enter closes popup", function() {
+        var dropdownlist = new DropDownList(input, {
+            animation: false,
             dataSource: data
         });
 
-        dropdownlist._blur = function(li) {
-            blurWasCalled = true;
-        };
+        dropdownlist.open();
 
-        dropdownlist._current = dropdownlist.ul.children().first();
         dropdownlist.wrapper.focus().press(kendo.keys.ENTER);
-        ok(blurWasCalled);
+
+        ok(!dropdownlist.popup.visible());
     });
 
     test("pressing alt + down should open popup", 1, function() {
@@ -357,21 +409,18 @@
             dataSource: [
                 { text: "item1", value: "item1"},
                 { text: "item2", value: "item2"}
-            ],
-            change: function() {
-                dropdownlist.dataSource.read();
-            }
+            ]
         }).data("kendoDropDownList");
 
         dropdownlist.select(1);
         dropdownlist.select(0);
-        dropdownlist.trigger("change");
+        dropdownlist.dataSource.read();
 
         ok(dropdownlist.current());
         equal(dropdownlist.current().text(), "Any");
     });
 
-    test("DropDownList focuses filter input on open", 1, function() {
+    asyncTest("DropDownList focuses filter input on open", 1, function() {
         var dropdownlist = input.kendoDropDownList({
             dataTextField: "text",
             dataValueField: "value",
@@ -385,7 +434,10 @@
         dropdownlist.wrapper.focus();
         dropdownlist.open();
 
-        equal(document.activeElement, dropdownlist.filterInput[0]);
+        dropdownlist.popup.one("activate", function () {
+            equal(document.activeElement, dropdownlist.filterInput[0]);
+            start();
+        });
     });
 
     test("DropDownList does not filter on altKey", 1, function() {
@@ -440,7 +492,7 @@
         equal(dropdownlist.calls("_select"), 0);
     });
 
-    test("DropDownList returns focus to wrapper on ALT+UP", 1, function() {
+    asyncTest("DropDownList returns focus to wrapper on ALT+UP", 1, function() {
         var dropdownlist = input.kendoDropDownList({
             dataTextField: "text",
             dataValueField: "value",
@@ -454,13 +506,17 @@
         dropdownlist.wrapper.focus();
         dropdownlist.open();
 
-        dropdownlist.filterInput.trigger({
-            type: "keydown",
-            keyCode: kendo.keys.UP,
-            altKey: true
-        });
+        dropdownlist.popup.one("activate", function () {
+            dropdownlist.filterInput.trigger({
+                type: "keydown",
+                keyCode: kendo.keys.UP,
+                altKey: true
+            });
 
-        equal(dropdownlist.wrapper[0], document.activeElement);
+            equal(document.activeElement, dropdownlist.wrapper[0]);
+
+            start();
+        });
     });
 
     asyncTest("DropDownList returns focus to wrapper on ENTER", 1, function() {
@@ -477,14 +533,16 @@
         dropdownlist.wrapper.focus();
         dropdownlist.open();
 
-        dropdownlist.filterInput.trigger({
-            type: "keydown",
-            keyCode: kendo.keys.ENTER
-        });
+        dropdownlist.popup.one("activate", function () {
+            dropdownlist.filterInput.trigger({
+                type: "keydown",
+                keyCode: kendo.keys.ENTER
+            });
 
-        setTimeout(function() {
-            start();
-            equal(dropdownlist.wrapper[0], document.activeElement);
+            setTimeout(function () {
+                start();
+                equal(dropdownlist.wrapper[0], document.activeElement);
+            });
         });
     });
 
@@ -559,10 +617,11 @@
         });
     });
 
-    test("DropDownList do not loose focus on double wrapper click", 1, function() {
+    test("DropDownList does not lose focus on double wrapper click", 1, function() {
         var dropdownlist = input.kendoDropDownList({
             dataTextField: "text",
             dataValueField: "value",
+            animation: false,
             dataSource: [
                 { text: "item1", value: "item1"},
                 { text: "item2", value: "item2"}
@@ -640,5 +699,146 @@
         parent.trigger("scroll");
 
         ok(dropdownlist.popup.visible());
+    });
+
+    //option label
+    test("option label is focused if defined", function() {
+        var dropdownlist = new DropDownList(input, {
+            dataSource: data,
+            optionLabel: "Any"
+        });
+
+        var current = dropdownlist.current();
+
+        ok(current.hasClass("k-list-optionlabel"));
+        ok(current.hasClass("k-state-focused"));
+    });
+
+    test("first item is selected on down when option label is focused", function() {
+        var dropdownlist = new DropDownList(input, {
+            dataSource: data,
+            optionLabel: "Any"
+        });
+
+        dropdownlist.wrapper.focus().press(keys.DOWN);
+
+        var current = dropdownlist.current();
+
+        equal(current[0], dropdownlist.ul.children()[0]);
+    });
+
+    test("focus option label on UP when first LI element is focused", function() {
+        var dropdownlist = new DropDownList(input, {
+            dataSource: data,
+            optionLabel: "Any",
+            index: 1
+        });
+
+        dropdownlist.wrapper.focus().press(keys.UP);
+
+        var current = dropdownlist.current();
+
+        ok(current.hasClass("k-list-optionlabel"));
+        ok(current.hasClass("k-state-focused"));
+        ok(current.hasClass("k-state-selected"));
+    });
+
+    test("stays on option label on UP", function() {
+        var dropdownlist = new DropDownList(input, {
+            dataSource: data,
+            optionLabel: "Any"
+        });
+
+        dropdownlist.wrapper.focus().press(keys.UP);
+
+        var current = dropdownlist.current();
+
+        ok(current.hasClass("k-list-optionlabel"));
+        ok(current.hasClass("k-state-focused"));
+        ok(current.hasClass("k-state-selected"));
+    });
+
+    test("focus optionLabel on HOME", function() {
+        var dropdownlist = new DropDownList(input, {
+            dataSource: data,
+            optionLabel: "Any",
+            index: 1
+        });
+
+        dropdownlist.wrapper.focus().press(keys.HOME);
+
+        var current = dropdownlist.current();
+
+        ok(current.hasClass("k-list-optionlabel"));
+        ok(current.hasClass("k-state-focused"));
+        ok(current.hasClass("k-state-selected"));
+    });
+
+    test("unfocus optionLabel on END", function() {
+        var dropdownlist = new DropDownList(input, {
+            dataSource: data,
+            optionLabel: "Any"
+        });
+
+        dropdownlist.wrapper.focus().press(keys.END);
+
+        var optionLabel = dropdownlist.optionLabel;
+        var current = dropdownlist.current();
+
+        equal(current[0], dropdownlist.ul.children()[data.length - 1]);
+
+        ok(!optionLabel.hasClass("k-state-focused"));
+        ok(!optionLabel.hasClass("k-state-selected"));
+    });
+
+    test("widget sets option label value if complex object", function() {
+        var dropdownlist = new DropDownList(input, {
+            dataValueField: "value",
+            dataTextField: "text",
+            dataSource: [{
+                text: "text", value: "value"
+            }],
+            optionLabel: {
+                text: "Any",
+                value: 0
+            }
+        });
+
+        equal(dropdownlist.value(), "0");
+    });
+
+    test("Selects first item if it is focused but not selected", 2, function() {
+        var dropdownlist = new DropDownList(input, {
+            dataSource: data,
+            index: -1
+        });
+
+        dropdownlist.listView.first();
+        dropdownlist.wrapper.focus().press(keys.DOWN);
+
+        var current = dropdownlist.current();
+
+        equal(current.index(), 0);
+        ok(current.hasClass("k-state-selected"));
+    });
+
+    test("DropDownList does not focus filter input if mobile device", 1, function() {
+        var dropdownlist = new DropDownList(input, {
+            animation: false,
+            dataSource: data,
+            filter: "contains"
+        });
+
+        var filterInput = dropdownlist.filterInput;
+
+        kendo.support.mobileOS = true;
+        kendo.support.touch = true;
+
+        dropdownlist.wrapper.focus().click();
+
+        notEqual(filterInput[0], document.activeElement);
+
+        kendo.support.mobileOS = false;
+        kendo.support.touch = false;
     });
 })();

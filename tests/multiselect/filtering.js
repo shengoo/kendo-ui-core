@@ -60,7 +60,7 @@
 
         multiselect.open();
 
-        ok(!multiselect.ul.children().eq(1).is(":visible"));
+        equal(multiselect.dataSource.filter().filters.length, 0);
     });
 
     test("MultiSelect filters data using selected items too", function() {
@@ -76,14 +76,11 @@
 
         multiselect.input.click();
 
-        ok(!multiselect.ul.children().eq(0).is(":visible"));
-        ok(!multiselect.ul.children().eq(1).is(":visible"));
-
         ok(select[0].children[0].selected);
         ok(select[0].children[1].selected);
     });
 
-    test("MultiSelect filters data and hides already clicked items", function() {
+    test("MultiSelect filters data renders all datasource view data", function() {
         popuplateSelect();
 
         var multiselect = new MultiSelect(select, {
@@ -96,8 +93,37 @@
         var children = multiselect.ul.children();
 
         equal(children.length, multiselect.dataSource.view().length);
-        ok(!children.eq(0).is(":visible"));
-        ok(!children.eq(1).is(":visible"));
+    });
+
+    test("MultiSelect does not append tags on list rebind after filter", function() {
+        popuplateSelect();
+
+        var multiselect = new MultiSelect(select, {
+            delay: 0
+        });
+
+        multiselect.search("Option1");
+        multiselect.ul.children().first().click();
+
+        multiselect.open();
+
+        equal(multiselect.tagList.children().length, 1);
+    });
+
+    test("MultiSelect allows selection after filter rebind", function() {
+        popuplateSelect();
+
+        var multiselect = new MultiSelect(select, {
+            delay: 0
+        });
+
+        multiselect.search("Option1");
+        multiselect.input.blur();
+        multiselect.open();
+
+        multiselect.ul.children().first().click();
+
+        equal(multiselect.tagList.children().length, 1);
     });
 
     test("MultiSelect hides popup if no data", function() {
@@ -171,5 +197,343 @@
         });
 
         multiselect.input.focus().val("baz").keydown();
+    });
+
+    test("MultiSelect renders value of the custom options on filter", 3, function() {
+        var multiselect = new MultiSelect(select, {
+            dataTextField: "text",
+            dataValueField: "value",
+            dataSource: [
+                { text: "text", value: "1" },
+                { text: "text2", value: "2" },
+                { text: "text3", value: "3" },
+                { text: "text4", value: "4" }
+            ],
+            value: ["1"]
+        });
+
+        multiselect.search("text2");
+
+        var options = select.children();
+
+        equal(options.length, 2);
+        equal(options[0].value, "2");
+        equal(options[1].value, "1");
+    });
+
+    test("MultiSelect keep selected values if less items are returned on rebind", 3, function() {
+        var values = [
+            [{ text: "text1", value: "1" }],
+            [{ text: "text4", value: "4" }],
+            [{ text: "text1", value: "1" }]
+        ];
+
+        var multiselect = new MultiSelect(select, {
+            autoBind: false,
+            dataTextField: "text",
+            dataValueField: "value",
+            dataSource: {
+                serverFiltering: true,
+                transport: {
+                    read: function(options) {
+                        options.success(values.shift());
+                    }
+                }
+            }
+        });
+
+        multiselect.search("text1");
+        multiselect.ul.children(":first").click();
+
+        multiselect.search("text4");
+        multiselect.ul.children(":first").click();
+
+        multiselect.open();
+
+        var values = multiselect.value();
+
+        equal(values.length, 2);
+        equal(values[0], "1");
+        equal(values[1], "4");
+    });
+
+    test("MultiSelect keeps the selected tags on rebind when returned data is less", 3, function() {
+        var values = [
+            [{ text: "text1", value: "1" }],
+            [{ text: "text4", value: "4" }],
+            [{ text: "text1", value: "1" }]
+        ];
+
+        var multiselect = new MultiSelect(select, {
+            autoBind: false,
+            dataTextField: "text",
+            dataValueField: "value",
+            dataSource: {
+                serverFiltering: true,
+                transport: {
+                    read: function(options) {
+                        options.success(values.shift());
+                    }
+                }
+            }
+        });
+
+        multiselect.search("text1");
+        multiselect.ul.children(":first").click();
+
+        multiselect.search("text4");
+        multiselect.ul.children(":first").click();
+
+        multiselect.open();
+
+        var tags = multiselect.tagList.children();
+
+        equal(tags.length, 2);
+        equal(tags.eq(0).children(":first").text(), "text1");
+        equal(tags.eq(1).children(":first").text(), "text4");
+    });
+
+    test("MultiSelect removes tag that does not exist in datasource after rebind", 4, function() {
+        var values = [
+            [{ text: "text1", value: "1" }],
+            [{ text: "text4", value: "4" }],
+            [{ text: "text1", value: "1" }]
+        ];
+
+        var multiselect = new MultiSelect(select, {
+            autoBind: false,
+            dataTextField: "text",
+            dataValueField: "value",
+            dataSource: {
+                serverFiltering: true,
+                transport: {
+                    read: function(options) {
+                        options.success(values.shift());
+                    }
+                }
+            }
+        });
+
+        multiselect.search("text1");
+        multiselect.ul.children(":first").click();
+
+        multiselect.search("text4");
+        multiselect.ul.children(":first").click();
+
+        multiselect.open();
+
+        multiselect.tagList.children().last().find(".k-i-close").click();
+
+        var tags = multiselect.tagList.children();
+        var values = multiselect.value();
+
+        equal(tags.length, 1);
+        equal(tags.eq(0).children(":first").text(), "text1");
+
+        equal(values.length, 1);
+        equal(values[0], "1");
+    });
+
+    test("MultiSelect removes tag that does exist in datasource after rebind", 4, function() {
+        var values = [
+            [{ text: "text1", value: "1" }],
+            [{ text: "text4", value: "4" }],
+            [{ text: "text1", value: "1" }]
+        ];
+
+        var multiselect = new MultiSelect(select, {
+            autoBind: false,
+            dataTextField: "text",
+            dataValueField: "value",
+            dataSource: {
+                serverFiltering: true,
+                transport: {
+                    read: function(options) {
+                        options.success(values.shift());
+                    }
+                }
+            }
+        });
+
+        multiselect.search("text1");
+        multiselect.ul.children(":first").click();
+
+        multiselect.search("text4");
+        multiselect.ul.children(":first").click();
+
+        multiselect.open();
+
+        multiselect.tagList.children().first().find(".k-i-close").click();
+
+        var tags = multiselect.tagList.children();
+        var values = multiselect.value();
+
+        equal(tags.length, 1);
+        equal(tags.eq(0).children(":first").text(), "text4");
+
+        equal(values.length, 1);
+        equal(values[0], "4");
+    });
+
+    test("MultiSelect removes all tags when less data is returned on rebind", 2, function() {
+        var values = [
+            [{ text: "text1", value: "2" }, { text: "text1", value: "1" }],
+            [{ text: "text4", value: "4" }],
+            [{ text: "text1", value: "1" }, { text: "text1", value: "2" }] //diff sort
+        ];
+
+        var multiselect = new MultiSelect(select, {
+            autoBind: false,
+            dataTextField: "text",
+            dataValueField: "value",
+            dataSource: {
+                serverFiltering: true,
+                transport: {
+                    read: function(options) {
+                        options.success(values.shift());
+                    }
+                }
+            }
+        });
+
+        multiselect.search("text1");
+        multiselect.ul.children(":last").click();
+
+        multiselect.search("text4");
+        multiselect.ul.children(":first").click();
+
+        multiselect.open();
+
+        multiselect.tagList.children().last().find(".k-i-close").click();
+        multiselect.tagList.children().last().find(".k-i-close").click();
+
+        var tags = multiselect.tagList.children();
+        var values = multiselect.value();
+
+        equal(tags.length, 0);
+        equal(values.length, 0);
+    });
+
+    test("MultiSelect de-selects item after rebind when data is less", 4, function() {
+        var values = [
+            [{ text: "text1", value: "2" }, { text: "text1", value: "1" }],
+            [{ text: "text4", value: "4" }],
+            [{ text: "text1", value: "1" }, { text: "text1", value: "2" }] //diff sort
+        ];
+
+        var multiselect = new MultiSelect(select, {
+            autoBind: false,
+            animation: false,
+            dataTextField: "text",
+            dataValueField: "value",
+            dataSource: {
+                serverFiltering: true,
+                transport: {
+                    read: function(options) {
+                        options.success(values.shift());
+                    }
+                }
+            }
+        });
+
+        multiselect.search("text1");
+        multiselect.ul.children(":last").click();
+
+        multiselect.search("text4");
+        multiselect.ul.children(":first").click();
+
+        multiselect.open();
+
+        multiselect.ul.find(".k-state-selected").click();
+
+        var tags = multiselect.tagList.children();
+        var values = multiselect.value();
+
+        equal(tags.length, 1);
+        equal(values.length, 1);
+
+        equal(tags.eq(0).children(":first").text(), "text4");
+        equal(values[0], "4");
+    });
+
+    test("MultiSelect keeps selected dataitems on de-select after rebind ", 3, function() {
+        var values = [
+            [{ text: "text1", value: "2" }, { text: "text1", value: "1" }],
+            [{ text: "text4", value: "4" }],
+            [{ text: "text3", value: "3" }],
+            [{ text: "text1", value: "1" }, { text: "text1", value: "2" }] //diff sort
+        ];
+
+        var multiselect = new MultiSelect(select, {
+            autoBind: false,
+            animation: false,
+            dataTextField: "text",
+            dataValueField: "value",
+            dataSource: {
+                serverFiltering: true,
+                transport: {
+                    read: function(options) {
+                        options.success(values.shift());
+                    }
+                }
+            }
+        });
+
+        multiselect.search("text1");
+        multiselect.ul.children(":last").click();
+
+        multiselect.search("text4");
+        multiselect.ul.children(":first").click();
+
+        multiselect.search("text3");
+        multiselect.ul.children(":first").click();
+
+        multiselect.open();
+
+        multiselect.ul.find(".k-state-selected").click();
+
+        var dataItems = multiselect.dataItems();
+
+        equal(dataItems.length, 2);
+        equal(dataItems[0].value, "4");
+        equal(dataItems[1].value, "3");
+    });
+
+    test("MultiSelect render the option text and value of the custom values", 5, function() {
+        var values = [
+            [{ text: "text1", value: "2" }, { text: "text1", value: "1" }],
+            [{ text: "text4", value: "4" }]
+        ];
+
+        var multiselect = new MultiSelect(select, {
+            autoBind: false,
+            animation: false,
+            dataTextField: "text",
+            dataValueField: "value",
+            dataSource: {
+                serverFiltering: true,
+                transport: {
+                    read: function(options) {
+                        options.success(values.shift());
+                    }
+                }
+            }
+        });
+
+        multiselect.search("text1");
+        multiselect.ul.children(":last").click();
+
+        multiselect.search("text4");
+        multiselect.ul.children(":first").click();
+
+        var options = select.children();
+
+        equal(options.length, 2);
+
+        equal(options[0].text, "text4");
+        equal(options[0].value, "4");
+
+        equal(options[1].text, "text1");
+        equal(options[1].value, "1");
     });
 })();

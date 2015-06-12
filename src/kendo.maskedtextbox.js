@@ -39,7 +39,7 @@ var __meta__ = {
 
             that.wrapper = element;
             that._tokenize();
-            that._reset();
+            that._form();
 
             that.element
                 .addClass("k-textbox")
@@ -73,7 +73,7 @@ var __meta__ = {
                     that._togglePrompt();
                 });
 
-             var disabled = element.is("[disabled]");
+             var disabled = element.is("[disabled]") || $(that.element).parents("fieldset").is(':disabled');
 
              if (disabled) {
                  that.enable(false);
@@ -88,8 +88,9 @@ var __meta__ = {
 
         options: {
             name: "MaskedTextBox",
-            promptChar: "_",
             clearPromptChar: false,
+            unmaskOnPost: false,
+            promptChar: "_",
             culture: "",
             rules: {},
             value: "",
@@ -132,11 +133,17 @@ var __meta__ = {
 
             that.element.off(ns);
 
-            if (that._form) {
-                that._form.off("reset", that._resetHandler);
+            if (that._formElement) {
+                that._formElement.off("reset", that._resetHandler);
+                that._formElement.off("submit", that._submitHandler);
             }
 
             Widget.fn.destroy.call(that);
+        },
+
+        raw: function() {
+            var unmasked = this._unmask(this.element.val(), 0);
+            return unmasked.replace(new RegExp(this.options.promptChar, "g"), "");
         },
 
         value: function(value) {
@@ -308,7 +315,7 @@ var __meta__ = {
             });
         },
 
-        _reset: function() {
+        _form: function() {
             var that = this;
             var element = that.element;
             var formId = element.attr("form");
@@ -321,7 +328,15 @@ var __meta__ = {
                     });
                 };
 
-                that._form = form.on("reset", that._resetHandler);
+                that._submitHandler = function() {
+                    that.element[0].value = that._old = that.raw();
+                };
+
+                if (that.options.unmaskOnPost) {
+                    form.on("submit", that._submitHandler);
+                }
+
+                that._formElement = form.on("reset", that._resetHandler);
             }
         },
 

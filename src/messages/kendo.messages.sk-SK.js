@@ -1,15 +1,4 @@
-﻿/*
-* Kendo UI v2014.3.1316 (http://www.telerik.com/kendo-ui)
-* Copyright 2015 Telerik AD. All rights reserved.
-*
-* Kendo UI commercial licenses may be obtained at
-* http://www.telerik.com/purchase/license-agreement/kendo-ui-complete
-* If you do not own a commercial license, this file shall be governed by the trial license terms.
-*/
-(function(f, define){
-    define([], f);
-})(function(){
-
+﻿(function ($, undefined) {
 /* FlatColorPicker messages */
 
 if (kendo.ui.FlatColorPicker) {
@@ -287,6 +276,8 @@ $.extend(true, kendo.ui.Grid.prototype.options.messages,{
     "create": "Pridať nový záznam",
     "destroy": "Odstrániť",
     "edit": "Upraviť",
+    "excel": "Export to Excel",
+    "pdf": "Export to PDF",
     "save": "Uložiť zmeny",
     "select": "Vybrať",
     "update": "Uložiť"
@@ -451,7 +442,9 @@ $.extend(true, kendo.ui.Scheduler.prototype.options.messages,{
   "deleteWindowTitle": "Odstránenie udalosti",
   "ariaSlotLabel": "Vybraté od {0:t} do {1:t}",
   "ariaEventLabel": "{0} dňa {1:D} o {2:t}",
-  "confirmation": "Naozaj chcete odstrániť túto udalosť?",
+  "editable": {
+    "confirmation": "Naozaj chcete odstrániť túto udalosť?"
+  },
   "views": {
     "day": "Deň",
     "week": "Týždeň",
@@ -545,8 +538,4 @@ $.extend(true, kendo.ui.Validator.prototype.options.messages,{
   "date": "{0} nie je platný dátum"
 });
 }
-
-
-return window.kendo;
-
-}, typeof define == 'function' && define.amd ? define : function(_, f){ f(); });
+})(window.kendo.jQuery);

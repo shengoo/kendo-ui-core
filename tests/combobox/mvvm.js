@@ -2,7 +2,7 @@
 
 var dom;
 
-module("autocomplete mvvm", {
+module("combobox mvvm", {
   setup: function() {
       QUnit.fixture.append(
         '<script id="template" type="text/x-kendo-template">' +
@@ -150,6 +150,145 @@ test("binding combobox initialized after binding", function() {
     equal(dom.data("kendoComboBox").value(), "bar");
 });
 
+test("value binding honors autoBind:false option when valuePrimitive is true", function() {
+    dom = $('<input data-role="combobox" data-value-field="text" data-text-field="text" data-auto-bind="false" data-value-primitive="true" data-bind="value:value, source:items" />');
+
+    var observable = kendo.observable({
+        items: new kendo.data.DataSource([{text:"foo"}, {text:"bar"}]),
+        value: "bar"
+    });
+
+    kendo.bind(dom, observable);
+
+    var widget = dom.data("kendoComboBox");
+
+    equal(widget.value(), "bar");
+    equal(widget.text(), "bar");
+});
+
+test("value binding displays options.text when autoBind:false and valuePrimitive is true", function() {
+    dom = $('<input data-role="combobox" data-value-field="text" data-text-field="text" data-auto-bind="false" data-text="selected text" data-value-primitive="true" data-bind="value:value, source:items" />');
+
+    var observable = kendo.observable({
+        items: new kendo.data.DataSource([{text:"foo"}, {text:"bar"}]),
+        value: "bar"
+    });
+
+    kendo.bind(dom, observable);
+
+    var widget = dom.data("kendoComboBox");
+
+    equal(widget.value(), "bar");
+    equal(widget.text(), "selected text");
+});
+
+test("value binding honors autoBind:false option when valuePrimitive is false", function() {
+    dom = $('<input data-role="combobox" data-value-field="value" data-text-field="text" data-auto-bind="false" data-value-primitive="false" data-bind="value:value, source:items" />');
+
+    var items = new kendo.data.ObservableArray([{text:"foo", value: 1}, {text:"bar", value: 2}]);
+    var observable = kendo.observable({
+        items: new kendo.data.DataSource({ data: items })
+    });
+    observable.value = items[1];
+
+    kendo.bind(dom, observable);
+
+    var widget = dom.data("kendoComboBox");
+
+    equal(widget.value(), "2");
+    equal(widget.text(), "bar");
+});
+
+test("widget sets value if source is bound even when autoBind: false is set", 1, function() {
+    dom = $('<input data-role="combobox" data-value-field="value" data-text-field="text" data-auto-bind="false" data-value-primitive="false" data-bind="value:value, source:items" />').appendTo(QUnit.fixture);
+
+    var items = new kendo.data.ObservableArray([{text:"foo", value: 1}, {text:"bar", value: 2}]);
+    var observable = kendo.observable({
+        items: items
+    });
+    observable.value = items[1];
+
+    kendo.bind(dom, observable);
+
+    var widget = dom.data("kendoComboBox");
+
+    equal(widget.select(), 1);
+});
+
+test("widget does not raise change event when value binding is used with autoBind:false", 0, function() {
+    dom = $('<input data-role="combobox" data-value-field="value" data-text-field="text" data-auto-bind="false" data-value-primitive="false" data-bind="value:value" />').appendTo(QUnit.fixture);
+
+    var items = new kendo.data.ObservableArray([{text:"foo", value: 1}, {text:"bar", value: 2}]);
+    var observable = kendo.observable({
+        items: new kendo.data.DataSource({ data: items })
+    });
+    observable.value = items[1];
+
+    kendo.bind(dom, observable);
+
+    var widget = dom.data("kendoComboBox");
+
+    widget.bind("change", function() {
+        ok(false);
+    });
+
+    widget.input.focus().blur();
+});
+
+test("initialized widget with autoBind:false does not raise change on initial binding after value binding is applied", 0, function() {
+    dom = $('<input data-value-primitive="false" data-bind="value:value"/>').appendTo(QUnit.fixture);
+
+    var items = new kendo.data.ObservableArray([{text:"foo", value: 1}, {text:"bar", value: 2}]);
+    var observable = kendo.observable({
+        value: items[1]
+    });
+
+    dom.kendoComboBox({
+        autoBind: false,
+        animation: false,
+        optionLabel: { text:"Select a category...", value: -1 },
+        dataTextField: "text",
+        dataValueField: "value",
+        dataSource: new kendo.data.DataSource({ data: items })
+    });
+
+    kendo.bind(dom, observable);
+
+    var widget = dom.data("kendoComboBox");
+
+    widget.bind("change", function() {
+        ok(false);
+    });
+
+    widget.input.focus();
+    widget.open();
+    widget.input.focusout();
+});
+
+asyncTest("widget does not loose selected value on first bound when autoBind: false is used", 3, function() {
+    dom = $('<input data-role="combobox" data-value-field="value" data-text-field="text" data-auto-bind="false" data-value-primitive="false" data-bind="value:value, source:items" />');
+
+    var items = new kendo.data.ObservableArray([{text:"foo", value: 1}, {text:"bar", value: 2}]);
+    var observable = kendo.observable({
+        items: new kendo.data.DataSource({ data: items })
+    });
+
+    observable.value = items[1];
+
+    kendo.bind(dom, observable);
+
+    var widget = dom.data("kendoComboBox");
+
+    widget.bind("dataBound", function() {
+        start();
+        equal(widget.value(), "2");
+        equal(widget.text(), "bar");
+        equal(widget.select(), 1);
+    });
+
+    widget.dataSource.read();
+});
+
 test("binding template", function() {
     dom = $('<select data-template="template" data-role="combobox" data-bind="source:items" />');
 
@@ -246,7 +385,7 @@ test("expressions are destroyed", 1, function() {
 });
 
 test("destroys detaches the events to widget", function() {
-    dom = $('<div data-role="combobox" data-bind="source:items" />');
+    dom = $('<select data-role="combobox" data-bind="source:items" />');
 
     var observable = kendo.observable({ items: [{text:"foo"}, {text:"bar"}] });
 
@@ -261,7 +400,7 @@ test("destroys detaches the events to widget", function() {
 
 
 test("dataBound event is raised if attached as option", 2, function() {
-    dom = $('<div data-role="combobox" data-bound="dataBound" data-bind="source:items" />');
+    dom = $('<select data-role="combobox" data-bound="dataBound" data-bind="source:items" />');
 
     var observable = kendo.observable({
         items: [{text:"foo"}, {text:"bar"}]
@@ -271,7 +410,7 @@ test("dataBound event is raised if attached as option", 2, function() {
 });
 
 test("dataBound event is raised if attached as option to a already initialized combobox", 1, function() {
-    dom = $('<div data-bound="dataBound" data-bind="source:items" />').kendoComboBox();
+    dom = $('<select data-bound="dataBound" data-bind="source:items" />').kendoComboBox();
 
     var observable = kendo.observable({
         items: [{text:"foo"}, {text:"bar"}]
@@ -481,6 +620,22 @@ test("Enter custom value after re bind", function() {
 
     equal(dataSource.data().length, 3);
     equal(combobox.value(), "custom2");
+});
+
+test("widget with autoBind:false does not select first item when model value is null", function() {
+    dom = $('<input data-index="0" data-auto-bind="false" data-text-field="text" data-value-field="text" data-bind="value:bar,source:items" data-role="combobox" />');
+
+    var observable = kendo.observable({
+        items: new kendo.data.DataSource({ data: [{text:"foo"}, {text:"bar"}] }),
+        bar: null
+    });
+
+    kendo.bind(dom, observable);
+    var combobox = dom.data("kendoComboBox");
+
+    combobox.dataSource.read();
+
+    equal(combobox.select(), -1);
 });
 
 })();

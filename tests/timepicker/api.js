@@ -583,4 +583,15 @@
         equal(timepicker.element.val(), "00:00");
     });
 
+     test("widget returns value according to date array", function() {
+        var timepicker = input.kendoTimePicker({
+            dates: [
+                 new Date(2000, 10, 10, 10, 0, 0)
+            ]
+        }).data("kendoTimePicker");
+        timepicker.timeView.bind();
+        var currentTarget = timepicker.timeView.ul.find("li").first();
+        currentTarget.click();
+        equal(timepicker.options.dates[0], timepicker.value());
+    });
 })();

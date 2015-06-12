@@ -95,6 +95,9 @@ var __meta__ = {
     }
 
     function createWidget(scope, element, attrs, widget, origAttr, controllers) {
+        if (!(element instanceof jQuery)) {
+            throw new Error("The Kendo UI directives require jQuery to be available before AngularJS. Please include jquery before angular in the document.");
+        }
         var kNgDelay = attrs.kNgDelay,
             delayValue = scope.$eval(kNgDelay);
 
@@ -152,7 +155,7 @@ var __meta__ = {
             var widgetEvents = ctor.widget.prototype.events;
 
             $.each(attrs, function(name, value) {
-                if (name === "source" || name === "kDataSource") {
+                if (name === "source" || name === "kDataSource" || name === "kScopeField") {
                     return;
                 }
 
@@ -220,7 +223,25 @@ var __meta__ = {
             var destroyRegister = destroyWidgetOnScopeDestroy(scope, object);
 
             if (attrs.kRebind) {
-                setupRebind(object, scope, element, originalElement, attrs.kRebind, destroyRegister);
+                setupRebind(object, scope, element, originalElement, attrs.kRebind, destroyRegister, attrs);
+            }
+
+            if (attrs.kNgDisabled) {
+                var kNgDisabled = attrs.kNgDisabled;
+                var isDisabled = scope.$eval(kNgDisabled);
+                if (isDisabled) {
+                    object.enable(!isDisabled);
+                }
+                bindToKNgDisabled(object, scope, element, kNgDisabled);
+            }
+
+            if (attrs.kNgReadonly) {
+                var kNgReadonly = attrs.kNgReadonly;
+                var isReadonly = scope.$eval(kNgReadonly);
+                if (isReadonly) {
+                    object.readonly(isReadonly);
+                }
+                bindToKNgReadonly(object, scope, element, kNgReadonly);
             }
 
             // kNgModel is used for the "logical" value
@@ -239,6 +260,35 @@ var __meta__ = {
 
             return object;
         }
+    }
+
+    function bindToKNgDisabled(widget, scope, element, kNgDisabled) {
+        if ((kendo.ui.PanelBar && widget instanceof kendo.ui.PanelBar) || (kendo.ui.Menu && widget instanceof kendo.ui.Menu)) {
+            $log.warn("k-ng-disabled specified on a widget that does not have the enable() method: " + (widget.options.name));
+            return;
+        }
+        scope.$apply(function() {
+            scope.$watch(kNgDisabled, function(newValue, oldValue) {
+                if (newValue != oldValue) {
+                    widget.enable(!newValue);
+                }
+            });
+        });
+    }
+
+    function bindToKNgReadonly(widget, scope, element, kNgReadonly) {
+        if (typeof widget.readonly != "function") {
+            $log.warn("k-ng-readonly specified on a widget that does not have the readonly() method: " + (widget.options.name));
+            return;
+        }
+        scope.$apply(function() {
+            scope.$watch(kNgReadonly, function(newValue, oldValue) {
+                if (newValue != oldValue) {
+                    widget.readonly(newValue);
+                }
+            });
+        });
+
     }
 
     function exposeWidget(widget, scope, attrs, kendoWidget, origAttr) {
@@ -293,6 +343,11 @@ var __meta__ = {
             if (val === undefined) {
                 val = ngModel.$modelValue;
             }
+
+            if (val === undefined) {
+                val = null;
+            }
+
             setTimeout(function(){
                 if (widget) { // might have been destroyed in between. :-(
                     widget.value(val);
@@ -332,7 +387,9 @@ var __meta__ = {
         };
 
         widget.first("change", onChange(false));
-        widget.first("dataBound", onChange(true));
+		if (!(kendo.ui.AutoComplete && widget instanceof kendo.ui.AutoComplete)) {
+			widget.first("dataBound", onChange(true));
+		}
 
         var currentVal = value();
 
@@ -354,6 +411,8 @@ var __meta__ = {
             return;
         }
 
+        var form  = $(widget.element).parents("form");
+        var ngForm = scope[form.attr("name")];
         var getter = $parse(kNgModel);
         var setter = getter.assign;
         var updating = false;
@@ -386,6 +445,11 @@ var __meta__ = {
 
         widget.first("change", function(){
             updating = true;
+
+            if (ngForm && ngForm.$pristine) {
+                ngForm.$setDirty();
+            }
+
             scope.$apply(function(){
                 setter(scope, widget.$angular_getLogicValue());
             });
@@ -480,7 +544,7 @@ var __meta__ = {
         widget.first("destroy", suspend);
     }
 
-    function setupRebind(widget, scope, element, originalElement, rebindAttr, destroyRegister) {
+    function setupRebind(widget, scope, element, originalElement, rebindAttr, destroyRegister, attrs) {
         // watch for changes on the expression passed in the k-rebind attribute
         var unregister = scope.$watch(rebindAttr, function(newValue, oldValue) {
             if (newValue !== oldValue) {
@@ -494,6 +558,18 @@ var __meta__ = {
                 //
                 // kRebind is probably impossible to get right at the moment.
                 ****************************************************************/
+
+                var templateOptions = WIDGET_TEMPLATE_OPTIONS[widget.options.name];
+
+                if (templateOptions) {
+                    templateOptions.forEach(function(name) {
+                        var templateContents = scope.$eval(attrs["k" + name]);
+
+                        if (templateContents) {
+                            originalElement.append($(templateContents).attr(kendo.toHyphens("k" + name), ""));
+                        }
+                    });
+                }
 
                 var _wrapper = $(widget.wrapper)[0];
                 var _element = $(widget.element)[0];
@@ -533,9 +609,15 @@ var __meta__ = {
                 scope: false,
 
                 controller: [ '$scope', '$attrs', '$element', function($scope, $attrs, $element) {
-                    this.template = function(key, value) {
+                    var that = this;
+                    that.template = function(key, value) {
                         $attrs[key] = kendo.stringify(value);
                     };
+
+                    $scope.$on("$destroy", function() {
+                        that.template = null;
+                        that = null;
+                    });
                 }],
 
                 link: function(scope, element, attrs, controllers) {
@@ -681,7 +763,9 @@ var __meta__ = {
                         replace  : true,
                         template : function(element, attributes) {
                             var tag = TAGNAMES[className] || "div";
-                            return "<" + tag + " " + dashed + ">" + element.html() + "</" + tag + ">";
+                            var scopeField = attributes.kScopeField;
+
+                            return "<" + tag + " " + dashed + (scopeField ? ('="' + scopeField + '"') : "") + ">" + element.html() + "</" + tag + ">";
                         }
                     };
                 });
@@ -745,6 +829,7 @@ var __meta__ = {
             // prevent leaks. https://github.com/kendo-labs/angular-kendo/issues/237
             $(el)
                 .removeData("$scope")
+                .removeData("$$kendoScope")
                 .removeData("$isolateScope")
                 .removeData("$isolateScopeNoTemplate")
                 .removeClass("ng-scope");
@@ -815,7 +900,7 @@ var __meta__ = {
             return;
         }
 
-        var scope = self.$angular_scope; //  || angular.element(self.element).scope();
+        var scope = self.$angular_scope;
 
         if (scope) {
             withoutTimeout(function(){
@@ -825,7 +910,8 @@ var __meta__ = {
 
                       case "cleanup":
                         angular.forEach(elements, function(el){
-                            var itemScope = angular.element(el).scope();
+                            var itemScope = $(el).data("$$kendoScope");
+
                             if (itemScope && itemScope !== scope && itemScope.$$kendoScope) {
                                 destroyScope(itemScope, el);
                             }
@@ -841,16 +927,19 @@ var __meta__ = {
                         angular.forEach(elements, function(el, i){
                             var itemScope;
                             if (x.scopeFrom) {
-                                itemScope = angular.element(x.scopeFrom).scope();
+                                itemScope = x.scopeFrom;
                             } else {
                                 var vars = data && data[i];
                                 if (vars !== undefined) {
                                     itemScope = $.extend(scope.$new(), vars);
                                     itemScope.$$kendoScope = true;
+                                } else {
+                                    itemScope = scope;
                                 }
                             }
 
-                            compile(el)(itemScope || scope);
+                            $(el).data("$$kendoScope", itemScope);
+                            compile(el)(itemScope);
                         });
                         digest(scope);
                         break;
@@ -869,10 +958,16 @@ var __meta__ = {
     });
 
     defadvice("ui.Select", "$angular_getLogicValue", function(){
-        var item = this.self.dataItem();
+        var item = this.self.dataItem(),
+            valueField = this.self.options.dataValueField;
+
         if (item) {
             if (this.self.options.valuePrimitive) {
-                return item[this.self.options.dataValueField];
+                if (!!valueField) {
+                    return item[valueField];
+                } else {
+                    return item;
+                }
             } else {
                 return item.toJSON();
             }
@@ -885,12 +980,26 @@ var __meta__ = {
         var self = this.self;
         var options = self.options;
         var valueField = options.dataValueField;
+        var text = options.text || "";
 
-        if (valueField && !options.valuePrimitive) {
-            val = val != null ? val[options.dataValueField || options.dataTextField] : null;
+        if (val === undefined) {
+            val = "";
         }
 
-        self.value(val);
+        if (valueField && !options.valuePrimitive && val) {
+            text = val[options.dataTextField] || "";
+            val = val[valueField || options.dataTextField];
+        }
+
+        if (self.options.autoBind === false && !self.listView.isBound()) {
+            if (!text && val && options.valuePrimitive) {
+                self.value(val);
+            } else {
+                self._preselect(val, text);
+            }
+        } else {
+            self.value(val);
+        }
     });
 
     defadvice("ui.MultiSelect", "$angular_getLogicValue", function() {
@@ -910,16 +1019,23 @@ var __meta__ = {
         if (val == null) {
             val = [];
         }
-        var self = this.self,
-            valueField = self.options.dataValueField;
 
-        if (valueField && !self.options.valuePrimitive) {
+        var self = this.self;
+        var options = self.options;
+        var valueField = options.dataValueField;
+        var data = val;
+
+        if (valueField && !options.valuePrimitive) {
             val = $.map(val, function(item) {
                 return item[valueField];
             });
         }
 
-        self.value(val);
+        if (options.autoBind === false && !options.valuePrimitive && !self.listView.isBound()) {
+            self._preselect(data, val);
+        } else {
+            self.value(val);
+        }
     });
 
     defadvice("ui.AutoComplete", "$angular_getLogicValue", function(){

@@ -224,7 +224,7 @@ test("suggest(text) should only append the rest of the text (filter:contains)", 
     var origin = window.setTimeout;
     window.setTimeout = function(func) { func() };
 
-    combobox.input.val("o").keydown();
+    combobox.input.focus().val("o").keydown();
 
     equal(combobox.text(), "oo");
 
@@ -245,6 +245,7 @@ test("refresh method suggests if no item is highlighted", 2, function() {
     var origin = window.setTimeout;
     window.setTimeout = function(func) { func() };
 
+    combobox.input.focus();
     combobox.input.val("f");
     combobox.search("f");
 
@@ -252,6 +253,37 @@ test("refresh method suggests if no item is highlighted", 2, function() {
     equal(combobox.current(), null);
 
     window.setTimeout = origin;
+});
+
+test("widget does not suggest when input is empty", 1, function() {
+    combobox = input.kendoComboBox({
+        dataTextField: "text",
+        dataValueField: "value",
+        dataSource: data,
+        suggest: true,
+        delay: 0,
+        index: 0
+    }).data("kendoComboBox");
+
+    combobox.input.focus();
+    combobox.input.val("");
+    combobox.refresh();
+
+    equal(combobox.text(), "");
+});
+
+test("suggest int values on search", function() {
+    combobox = new ComboBox(input, {
+        dataTextField: "text",
+        dataValueField: "value",
+        dataSource: [{text: 1, value: "1"}],
+        suggest: true
+    });
+
+    combobox.input.type("1");
+    combobox.search("1");
+
+    equal(combobox.input.val(), "1");
 });
 
 })();

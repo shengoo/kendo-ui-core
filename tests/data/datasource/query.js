@@ -1398,7 +1398,7 @@ asyncTest("query does not aggregate data if serverAggregate is true", 1, functio
     }).bind("change", function() {
         start();
 
-        ok($.isEmptyObject(dataSource.aggregates()));
+        equal(dataSource.aggregates().foo.sum, 0);
     });
 
     $.mockjax({
@@ -1614,6 +1614,21 @@ test("query raised requestEnd", 1, function() {
 
     dataSource.bind("requestEnd", function() {
         ok(true);
+    });
+
+    dataSource.query();
+});
+
+test("query raised requestEnd with correct operation type", 1, function() {
+    var called = false,
+        dataSource = new DataSource({
+            data: [{age: 1}, {age: 2},{age: 3}, {age: 4},{age: 5}, {age: 6},{age: 7}, {age: 8}]
+        });
+
+    dataSource.read();
+
+    dataSource.bind("requestEnd", function(e) {
+        ok(e.type, "read");
     });
 
     dataSource.query();

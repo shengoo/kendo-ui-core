@@ -709,6 +709,10 @@ test("range existing range is requested while remote is fetched - remote request
                 total: "total"
             }
         });
+
+    var counter = 0;
+    stub(dataSource, {_timeStamp: function() { return counter++; } });
+
     dataSource.page(1);
 
     dataSource.range(20, 10);
@@ -748,6 +752,10 @@ test("range existing range is requested while multiple remote requests are fetch
                 total: "total"
             }
         });
+
+    var counter = 0;
+    stub(dataSource, {_timeStamp: function() { return counter++; } });
+
     dataSource.page(1);
 
     dataSource.range(20, 10);
@@ -787,6 +795,10 @@ test("range request made after remote requests are cancelled as existing range i
                 total: "total"
             }
         });
+
+    var counter = 0;
+    stub(dataSource, {_timeStamp: function() { return counter++; } });
+
     dataSource.page(1);
 
     dataSource.range(20, 10);
@@ -906,7 +918,7 @@ test("range with server grouping", function() {
                 read: function(options) {
                     var skip = options.data.skip;
                     var take = options.data.take;
-                    var group = { items: [] };
+                    var group = { items: [], field: "foo", value: 1 };
                     for (var i = skip; i < Math.min(skip + take, totalCount); i++) {
                         group.items.push({ foo: i });
                     }
@@ -929,6 +941,54 @@ test("range with server grouping", function() {
     equal(view[0].items[0].foo, 6);
 });
 
+test("range with server grouping second page with two groups", function() {
+    var totalCount = 10,
+        dataSource = new DataSource({
+            pageSize: 2,
+            serverPaging: true,
+            group: [{ field: "foo"}, { field: "bar" }],
+            serverGrouping: true,
+            transport: {
+                read: function(options) {
+                    var skip = options.data.skip;
+                    var take = options.data.take;
+                    var group = [];
+
+                    for (var i = skip; i < Math.min(skip + take, totalCount); i++) {
+                        group.push( {
+                            "value": i,
+                            "field": "ID",
+                            "hasSubgroups": true,
+                            "items": [{
+                                "value": i*2,
+                                "field": "UnitPrice",
+                                "hasSubgroups": false,
+                                "items": [{
+                                    "ID": 11,
+                                    "Name": "Product11",
+                                    "UnitPrice": 34.54,
+                                    "UnitsOnOrder": 11
+                                }]
+                            }]
+                        });
+                    }
+                    options.success({ groups: group, total: totalCount });
+                }
+            },
+            schema: {
+                data: "data",
+                groups: "groups",
+                total: "total"
+            }
+        });
+
+    dataSource.read();
+    dataSource.range(1, 2);
+    var view = dataSource.view();
+
+    equal(view.length, 2);
+});
+
 test("range with server grouping ranges are not modfied", function() {
     var totalCount = 47,
         dataSource = new DataSource({
@@ -942,13 +1002,13 @@ test("range with server grouping ranges are not modfied", function() {
                     var take = options.data.take;
                     var data = [];
 
-                    var group = { items: [] };
+                    var group = { items: [], field: "foo", value: 1 };
                     for (var i = 0; i < 10; i++) {
                         group.items.push({ foo: i });
                     }
                     data.push(group);
 
-                    group = { items: [] };
+                    group = { items: [], field: "foo", value: 2 };
                     for (var i = 0; i < 10; i++) {
                         group.items.push({ foo: i });
                     }
@@ -1590,7 +1650,6 @@ test("models within the range have correct parent - server paging", function() {
     deepEqual(dataSource.view()[0].parent(), dataSource.data());
 });
 
-
 /*test("ranges are updated when model is added after range is called - with local binding", function() {
     var totalCount = 47,
         dataSource = new DataSource({
@@ -1610,5 +1669,21 @@ test("models within the range have correct parent - server paging", function() {
     equal(range.data.length, 46);
     equal(dataSource.data().length, 46);
 });*/
+
+test("error event is raised if error occurs during fetching", 1, function() {
+    var dataSource = new DataSource({
+        error: function() {
+            ok(true);
+        },
+        transport: {
+            read: function(options) {
+                options.error({});
+            }
+        }
+    });
+
+    dataSource.prefetch(0, 1);
+});
+
 
 }());

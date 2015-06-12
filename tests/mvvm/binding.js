@@ -28,6 +28,9 @@ module("mvvm binding", {
         kendo.ui.plugin(ParentWidget);
 
         QUnit.fixture.append(
+            '<script id="select-element-template" type="text/x-kendo-template">' +
+            '<select data-value-field="Value" data-text-field="Text" data-bind="source: values, value: currentValue"></select>' +
+            '</script>' +
             '<script id="mobile-widget-template" type="text/x-kendo-template">' +
             '<span data-role="testwidget" />' +
             '</script>' +
@@ -72,10 +75,12 @@ module("mvvm binding", {
 });
 
 test("text binding", function() {
-    dom = $('<span data-bind="text:foo"/>');
-
-    kendo.bind(dom, { foo: "foo" });
-    equal(dom.text(), "foo");
+    dom = $('<span data-bind="text:text"/>');
+    var vm = kendo.observable({
+        text: "Comment\nwith\nbreakline <bold>TEST HTML</bold>"
+    });
+    kendo.bind(dom, vm);
+    equal(dom.text(), vm.get("text"));
 });
 
 test("html binding", function() {
@@ -260,6 +265,18 @@ test("select binding", function() {
     equal(dom.find("option").last().text(), "2");
 });
 
+test("select source binding - no option should be selected if the model's field value is empty", function() {
+    dom = $('<select data-bind="value:product.name, source:dataSource"/>');
+
+    var vm = kendo.observable({
+        product: {name: null},
+        dataSource: []
+    });
+    kendo.bind(dom, vm);
+    vm.set("dataSource", [1,2,3,4]);
+    equal(dom.val(), vm.product.name);
+});
+
 test("select binding with template", function() {
     dom = $('<select data-template="select-template" data-bind="source:foo"/>');
 
@@ -288,6 +305,27 @@ test("select binding to data source", function() {
 
     equal(dom.find("option").text(), "foo");
     equal(dom.find("option").val(), "1");
+});
+
+test("select binding sets option when value is set before source", 1, function() {
+    dom = $('<select data-text-field="name" data-value-field="id" data-bind="source:source, value:value"/>');
+
+    var data = [{
+        id: 1,
+        name: "foo"
+    }];
+
+    var model = kendo.observable({
+        source: [],
+        value: ""
+    });
+
+    kendo.bind(dom, model);
+
+    model.set("value", 1);
+    model.set("source", data);
+
+    equal(dom.val(), "1");
 });
 
 test("data source data isn't fetched if the auto-bind attribute is set to false", function() {
@@ -322,6 +360,25 @@ test("pushing items to array creates new option elements without destroying the 
     equal(dom.find("option").eq(2).text(), "3");
     equal(dom.find("option").eq(3).text(), "4");
     equal(dom.find("option")[0], option);
+});
+test("changing items to the data source updated option elements without destroying the existing ones", function() {
+    dom = $('<select data-text-field="name" data-value-field="id" data-bind="source:optionsArray"/>');
+
+    var viewModel = kendo.observable( {
+        optionsArray: [
+                { id: 1, name: "option 1" },
+                { id: 2, name: "option 2" },
+            ]
+    });
+
+    kendo.bind(dom, viewModel);
+
+    var option = dom.find("option")[0];
+
+    viewModel.optionsArray[0].set("name", "new value");
+
+    equal(dom.find("option").length, viewModel.optionsArray.length);
+    equal(dom.find("option:first").text(), "new value");
 });
 
 test("adding items to the data source creates new option elements without destroying the existing ones", function() {
@@ -1366,6 +1423,26 @@ test("nested template without source with event binding",1, function() {
     dom.find("li").click();
 });
 
+test("select with source and value binding in template with source binding", function() {
+    dom = $('<div data-template="select-element-template" data-bind="source:items"/>');
+    var vm = kendo.observable({
+        items: [
+          {
+            values: [{Text: "ItemA", Value: "AAA"}, {Text: "ItemB", Value: "BBB"}],
+            currentValue: "AAA"
+          },
+          {
+            values: [{Text: "ItemA", Value: "AAA"}, {Text: "ItemB", Value: "BBB"}],
+            currentValue: "BBB"
+          }
+        ]
+    });
+
+    kendo.bind(dom, vm);
+
+    equal(dom.find("select:first").val(), "AAA");
+    equal(dom.find("select:last").val(), "BBB");
+});
 test("text binding displays undefined fields as empty string", function() {
     dom = $('<span data-bind="text:foo"></span>');
     kendo.bind(dom, {});

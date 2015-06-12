@@ -533,7 +533,7 @@ var __meta__ = {
 
             that.element.removeAttr("aria-activedescendant");
 
-            if (focused) {
+            if (focused && focused.length) {
                 if (focused[0].id === id) {
                     focused.removeAttr("id");
                 }
@@ -543,7 +543,7 @@ var __meta__ = {
                     .removeClass(FOCUSEDCLASS);
             }
 
-            if (candidate) {
+            if ($(candidate).length) {
                 id = candidate[0].id || id;
 
                 candidate.attr("id", id)

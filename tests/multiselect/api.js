@@ -49,16 +49,6 @@
         ok(multiselect.ul.children().length);
     });
 
-    test("MultiSelect do not call popup.open method if no visible items", function() {
-        popuplateSelect(1);
-        var multiselect = new MultiSelect(select);
-
-        multiselect.value("0");
-        multiselect.open();
-
-        ok(!multiselect.popup.visible());
-    });
-
     test("MultiSelect does not rebind on open if no filtration", function() {
         popuplateSelect();
         var multiselect = new MultiSelect(select, {
@@ -124,26 +114,14 @@
 
     test("MultiSelect supports ObservableArray value", function() {
         popuplateSelect();
-        var multiselect = new MultiSelect(select),
-            value = new kendo.data.ObservableArray(["0"]);
+        var multiselect = new MultiSelect(select);
+        var value = new kendo.data.ObservableArray(["0"]);
 
         multiselect.value(value);
 
         equal(multiselect.tagList.children().length, 1);
         equal(multiselect.tagList.children(":first").find("span").html(), "Option0");
         ok(multiselect.element[0].children[0].selected);
-    });
-
-    test("MultiSelect hides corresponding LI elements when set value", function() {
-        popuplateSelect();
-        var multiselect = new MultiSelect(select);
-
-        multiselect.value(["0", "1"]);
-
-        var items = multiselect.ul.children();
-
-        equal(items.eq(0).css("display"), "none");
-        equal(items.eq(1).css("display"), "none");
     });
 
     test("MultiSelect returns array with selected values", function() {
@@ -200,16 +178,6 @@
         equal(multiselect.ul.children().length, 5);
     });
 
-    test("MultiSelect does not open list if there are no visible items", function() {
-        popuplateSelect(1);
-        var multiselect = new MultiSelect(select, {
-            value: "0"
-        });
-        multiselect.open();
-
-        ok(!multiselect.popup.visible());
-    });
-
     test("MultiSelect closes popup", 1, function() {
         popuplateSelect();
         var multiselect = new MultiSelect(select);
@@ -226,7 +194,7 @@
 
         multiselect.enable(false);
 
-        multiselect.tagList.find(".k-delete").click();
+        multiselect.tagList.find(".k-i-close").click();
 
         equal(multiselect.tagList.children().length, 1);
         ok(multiselect.wrapper.hasClass("k-state-disabled"));
@@ -241,7 +209,7 @@
         multiselect.enable(false);
         multiselect.enable(true);
 
-        multiselect.tagList.find(".k-delete").click();
+        multiselect.tagList.find(".k-i-close").click();
         multiselect.wrapper.mousedown();
 
         equal(multiselect.tagList.children().length, 0);
@@ -259,6 +227,16 @@
         equal(dataItems.length, 1);
         equal(dataItems[0].value, "1");
         equal(dataItems[0].text, "Option1");
+    });
+
+    test("MultiSelect fetches item if widget is disabled and value is set", function() {
+        popuplateSelect();
+        var multiselect = new MultiSelect(select.attr("disabled", true), { autoBind: false });
+
+        multiselect.value("1");
+
+        equal(multiselect.dataSource.view().length, 5);
+        equal(multiselect.value().length, 1);
     });
 
     test("MultiSelect fetches item if autoBind is set to false when value is set", function() {
@@ -377,6 +355,29 @@
         equal(multiselect.ul.children().length, 0);
     });
 
+    test("MultiSelect does not request source for second time if already started", 1, function() {
+        popuplateSelect();
+
+        var def = $.Deferred();
+        var source =  new kendo.data.DataSource({
+            transport: {
+                read: function(options) {
+                    ok(true);
+
+                    def.done(function() {
+                        options.success([]);
+                    });
+                }
+            }
+        });
+
+        var multiselect = new MultiSelect(select);
+
+        multiselect.setDataSource(source);
+        multiselect.value([1]);
+        def.resolve();
+    });
+
     test("MultiSelect toggles popup element", function() {
         popuplateSelect();
         var multiselect = new MultiSelect(select);
@@ -386,4 +387,30 @@
         ok(multiselect.popup.visible());
     });
 
+    test("MultiSelect does not append already selected items", function() {
+        popuplateSelect();
+        var multiselect = new MultiSelect(select);
+
+        multiselect.value(["0", "1"]);
+
+        multiselect.setDataSource(multiselect.dataSource);
+
+        equal(multiselect.tagList.children().length, 2);
+    });
+
+    test("setOptions updates listView template when dataTextField is set", function() {
+        var multiselect = new MultiSelect(select, {
+            dataSource: [{ name: "item1", anotherName: "anotherItem1" }],
+            dataTextField: "name",
+            dataValueField: "name",
+            filter: "startswith"
+        });
+
+        multiselect.setOptions({
+            dataTextField: "anotherName"
+        });
+
+
+        equal(multiselect.listView.options.template, "#:data.anotherName#");
+    });
 })();

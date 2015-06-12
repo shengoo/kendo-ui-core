@@ -145,7 +145,7 @@ var __meta__ = {
                 .end();
 
             $(window)
-                .on("resize" + NS + that._marker, proxy(that.resize, that))
+                .on("resize" + NS + that._marker, proxy(that.resize, that, false))
                 .on("mouseup" + NS + that._marker, proxy(that._removeOverlays, that));
         },
 
@@ -398,6 +398,8 @@ var __meta__ = {
                 sizingProperty = isHorizontal ? "width" : "height",
                 totalSize = element[sizingProperty]();
 
+            that.wrapper.addClass("k-splitter-resizing");
+
             if (splitBarsCount === 0) {
                 splitBarsCount = panes.length - 1;
                 panes.slice(0, splitBarsCount)
@@ -477,6 +479,8 @@ var __meta__ = {
 
             that._detachEvents();
             that._attachEvents();
+
+            that.wrapper.removeClass("k-splitter-resizing");
 
             kendo.resize(panes);
             that.trigger(LAYOUTCHANGE);

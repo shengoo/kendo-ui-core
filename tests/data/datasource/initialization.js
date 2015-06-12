@@ -5,6 +5,15 @@ var RemoteTransport = kendo.data.RemoteTransport;
 var Model = kendo.data.Model;
 var DataSource = kendo.data.DataSource;
 
+module("DataSource initialization", {
+    setup: function() {
+    },
+    teardown: function() {
+        delete kendo.data.transports["my-custom-transport"];
+    }
+});
+
+
 function setup(source) {
     data = source || [{ id:1, bar: "foo" },{ id: 2, bar: "foo" }];
 
@@ -167,6 +176,52 @@ test("infer from html select skips disabled options", function() {
     equal(dataSource.data().length, 1);
     equal(dataSource.data()[0].text, "foo2");
     equal(dataSource.data()[0].value, "2");
+});
+
+test("infer from grouped html select", function() {
+    var select = $("<select><optgroup label='group1'><option value=1>foo1</option></optgroup><optgroup label='group2'><option value=2>foo2</option></optgroup></select>"),
+        dataSource = DataSource.create({
+            select: select,
+            fields: [ { field: "text" }, { field: "value" } ]
+        });
+
+    dataSource.read();
+
+    var data = dataSource.data();
+
+    equal(data.length, 2);
+    equal(data[0].optgroup, "group1");
+    equal(data[1].optgroup, "group2");
+});
+
+test("infer from grouped html select skips disabled groups", function() {
+    var select = $("<select><optgroup disabled label='group1'><option value=1>foo1</option></optgroup><optgroup label='group2'><option value=2>foo2</option></optgroup></select>"),
+        dataSource = DataSource.create({
+            select: select,
+            fields: [ { field: "text" }, { field: "value" } ]
+        });
+
+    dataSource.read();
+
+    var data = dataSource.data();
+
+    equal(data.length, 1);
+    equal(data[0].optgroup, "group2");
+});
+
+
+test("infering from grouped html select sets group option", function() {
+    var select = $("<select><optgroup label='group1'><option value=1>foo1</option></optgroup><optgroup label='group2'><option value=2>foo2</option></optgroup></select>"),
+        dataSource = DataSource.create({
+            select: select,
+            fields: [ { field: "text" }, { field: "value" } ]
+        });
+
+    dataSource.read();
+
+    var group = dataSource.group();
+    equal(group.length, 1);
+    equal(group[0].field, "optgroup");
 });
 
 test("initialize data source from array", function() {
@@ -424,6 +479,31 @@ test("re-read does not remove the parent of the observable array", function() {
 
     deepEqual(arr[0].parent(), arr);
     deepEqual(arr[1].parent(), arr);
+});
+
+test("dataSource instance is passed as option to the custom transport", 2, function() {
+    var MyTransport = RemoteTransport.extend({
+        init: function(options) {
+            ok(options.dataSource);
+            ok(options.dataSource instanceof DataSource);
+        }
+    });
+
+    kendo.data.transports["my-custom-transport"] = MyTransport;
+
+    var dataSource = new DataSource({
+        transport: {},
+        type: "my-custom-transport"
+    });
+});
+
+test("dataSource instance is passed as option to the built-in remote transport", 2, function() {
+    var dataSource = new DataSource({
+        transport: {},
+    });
+
+    ok(dataSource.transport.options.dataSource instanceof DataSource);
+    equal(dataSource.transport.options.dataSource, dataSource);
 });
 
 }());

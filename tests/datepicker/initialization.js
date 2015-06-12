@@ -305,6 +305,12 @@ test("DatePicker uses disabled attr over the readonly", function() {
     equal(input.attr("readonly"), undefined);
 });
 
+test("DatePicker is disabled when placed in disabled fieldset", function() {
+    $(input).wrap('<fieldset disabled="disabled"></fieldset>');
+    input.kendoDatePicker().data("kendoDatePicker");
+    equal(input.attr("disabled"), "disabled");
+});
+
 test("DatePicker does not remove input text on initialization if not valid value", function() {
     var datepicker = input.val("test").kendoDatePicker().data("kendoDatePicker");
 
@@ -329,5 +335,27 @@ test("DatePicker sets max from max attribute", function() {
 
     deepEqual(datepicker.max(), date);
 });
+
+test("DatePicker parseFormats contains default ISO format if no parseFromats are configured", function() {
+    var datepicker = input.kendoDatePicker().data("kendoDatePicker");
+    var ISOFormat = $.inArray('yyyy-MM-dd', datepicker.options.parseFormats) > -1
+    ok(ISOFormat)
+});
+
+test("DatePicker max and min values are reset to initial when form is reset", function() {
+    $(input).wrap("<form id='form'></form>");
+    var datepicker = input.kendoDatePicker({
+        min: new Date(2000, 0, 1),
+        max: new Date(2000, 0, 2)
+    }).data("kendoDatePicker")
+
+    datepicker.setOptions({
+        max: new Date(2000, 0, 4)
+    });
+
+    $("form")[0].reset();
+    deepEqual(datepicker.options.max, new Date(2000, 0, 2));
+});
+
 
 })();

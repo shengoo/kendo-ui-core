@@ -107,6 +107,13 @@ var __meta__ = {
             Widget.fn.setOptions.call(this, options);
 
             this._templates();
+
+            if (this.selectable) {
+                this.selectable.destroy();
+                this.selectable = null;
+            }
+
+            this._selectable();
         },
 
         _templates: function() {
@@ -536,6 +543,10 @@ var __meta__ = {
                        template = that.altTemplate;
                    }
 
+                   that.angular("cleanup", function() {
+                       return { elements: [ editable.element ]};
+                   });
+
                    data = that._modelFromElement(editable.element);
                    that._destroyEditable();
 
@@ -547,6 +558,10 @@ var __meta__ = {
                    if (that._hasBindingTarget()) {
                         kendo.bind(item, data);
                    }
+
+                   that.angular("compile", function() {
+                       return { elements: [ item ], data: [ { dataItem: data } ]};
+                   });
                }
            }
 

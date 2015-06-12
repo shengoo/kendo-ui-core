@@ -141,6 +141,16 @@ test("kendo.resize skips hidden widgets", 0, function() {
     kendo.resize(QUnit.fixture);
 });
 
+test("hidden widgets do not execute the routine in their resize method", 0, function () {
+    widget.bind("resize", function () {
+        ok(false);
+    });
+
+    div.wrap("<div style='display: none' />");
+
+    widget.resize();
+});
+
 test("kendo.resize resizes nested widgets", 1, function() {
     widget.bind("resize", function() {
         ok(true);
@@ -149,6 +159,14 @@ test("kendo.resize resizes nested widgets", 1, function() {
     div.wrap("<div />");
 
     kendo.resize(QUnit.fixture);
+});
+
+test("resize passes force value to widget's internal _resize method", 1, function () {
+    widget._resize = function (size, force) {
+        ok(force);
+    }
+
+    widget.resize(true);
 });
 
 }());

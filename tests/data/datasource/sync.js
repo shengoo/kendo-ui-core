@@ -775,4 +775,221 @@ test("sync returns promise when offline", 2, function() {
     promise.then($.proxy(ok, this, true));
 });
 
+test("sync calls the create method of the transport if submit is defined but not in batch mode", function() {
+    setup({ batch: false });
+
+    stub(dataSource.transport, "create");
+
+    dataSource.add(new Model());
+    dataSource.add(new Model());
+    dataSource.sync();
+
+    equal(dataSource.transport.calls("create"), 2);
+});
+
+test("sync does not call the submit method of the transport if defined and not in batch mode", function() {
+    setup({ batch: false });
+
+    stub(dataSource.transport, "submit");
+
+    dataSource.add(new Model());
+    dataSource.add(new Model());
+    dataSource.sync();
+
+    equal(dataSource.transport.calls("submit"), 0);
+});
+
+test("sync calls the submit method of the transport if defined", function() {
+    setup({ batch: true });
+
+    stub(dataSource.transport, "submit");
+
+    dataSource.add(new Model());
+    dataSource.add(new Model());
+    dataSource.sync();
+
+    equal(dataSource.transport.calls("submit"), 1);
+});
+
+test("sync calls the submit method passing the created records", function() {
+    setup({ batch: true });
+
+    stub(dataSource.transport, "submit");
+
+    dataSource.add(new Model({ foo: "bar" }));
+    dataSource.add(new Model({ foo: "baz" }));
+    dataSource.sync();
+
+    var models = dataSource.transport.args("submit")[0].data.created;
+    equal(models.length, 2);
+    equal(models[0].foo, "bar");
+    equal(models[1].foo, "baz");
+});
+
+test("sync calls the submit method passing the updated records", function() {
+    setup({ batch: true });
+
+    stub(dataSource.transport, "submit");
+
+    dataSource.at(0).set("foo", "bar");
+
+    dataSource.sync();
+
+    var models = dataSource.transport.args("submit")[0].data.updated;
+    equal(models.length, 1);
+    equal(models[0].foo, "bar");
+});
+
+test("sync calls the submit method passing the removed records", function() {
+    setup({ batch: true });
+
+    stub(dataSource.transport, "submit");
+
+    dataSource.remove(dataSource.at(0));
+
+    dataSource.sync();
+
+    var models = dataSource.transport.args("submit")[0].data.destroyed;
+    equal(models.length, 1);
+    equal(models[0].foo, "foo");
+});
+
+
+test("sync calls the submit method passing the removed, updated and created records", function() {
+    setup({ batch: true, data: [{ id: 1, foo: "foo" }, { id: 2, foo: "deleted" }] });
+
+    stub(dataSource.transport, "submit");
+
+    dataSource.at(0).set("foo", "updated");
+
+    dataSource.remove(dataSource.at(1));
+
+    dataSource.add(new Model({ foo: "created" }));
+
+    dataSource.sync();
+
+    var changes = dataSource.transport.args("submit")[0].data;
+
+    equal(changes.created.length, 1);
+    equal(changes.destroyed.length, 1);
+    equal(changes.updated.length, 1);
+
+    equal(changes.created[0].foo, "created");
+    equal(changes.updated[0].foo, "updated");
+    equal(changes.destroyed[0].foo, "deleted");
+});
+
+test("destoyed method returns the removed items", function() {
+    setup();
+
+    var removed = dataSource.at(0);
+    dataSource.remove(removed);
+    var result = dataSource.destroyed();
+
+    equal(result.length, 1);
+    deepEqual(removed, result[0]);
+});
+
+test("created method returns the added items", function() {
+    setup();
+
+    var first = dataSource.add();
+    var second = dataSource.add();
+
+    var result = dataSource.created();
+
+    equal(result.length, 2);
+    deepEqual(result[1], first);
+    deepEqual(result[0], second);
+});
+
+test("updated method returns the modified items", function() {
+    setup({ data: [{ id: 1, foo: "foo" }, { id: 2, foo: "foo2" }] });
+
+    var first = dataSource.at(0);
+    first.set("foo", 1);
+
+    var second = dataSource.at(1);
+    second.set("foo", 2);
+
+    var result = dataSource.updated();
+
+    equal(result.length, 2);
+    deepEqual(result[0], first);
+    deepEqual(result[1], second);
+});
+
+test("updated method does not return the dirty added items", function() {
+    setup({ data: [{ id: 1, foo: "foo" }, { id: 2, foo: "foo2" }] });
+
+    var first = dataSource.add();
+
+    first.set("foo", 1);
+
+    var result = dataSource.updated();
+
+    ok(!result.length);
+});
+
+test("updated method returns modified records if server grouping is enabled", function() {
+    var dataSource = new DataSource({
+            schema: {
+                model: { id: "id" },
+                groups: function(data) {
+                    return [{
+                        items: [{ foo: 1, id: 0}],
+                        field: "foo",
+                        value: "bar"
+                    }];
+                },
+                total: function() {
+                    return 1;
+                }
+            },
+            batch: true,
+            serverGrouping: true,
+            group: { field: "foo" }
+        });
+
+    dataSource.read();
+
+    dataSource.get(0).set("foo", 2);
+
+    var updated = dataSource.updated();
+
+    equal(updated.length, 1);
+    equal(updated[0], dataSource.get(0));
+});
+
+test("created method returns added records if server grouping is enabled", function() {
+    var dataSource = new DataSource({
+            schema: {
+                model: { id: "id" },
+                groups: function(data) {
+                    return [{
+                        items: [{ foo: 1, id: 0}],
+                        field: "foo",
+                        value: "bar"
+                    }];
+                },
+                total: function() {
+                    return 1;
+                }
+            },
+            batch: true,
+            serverGrouping: true,
+            group: { field: "foo" }
+        });
+
+    dataSource.read();
+
+    var added = dataSource.add();
+
+    var created = dataSource.created();
+
+    equal(created.length, 1);
+    equal(created[0], added);
+});
+
+
 }());

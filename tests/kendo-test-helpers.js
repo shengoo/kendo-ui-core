@@ -80,8 +80,8 @@ function arrayClose(a, b, tolerance) {
 
 function tzTest(tzAlias, testName, expected, callback ) {
     var TZ_NAMES = {
-        "Brazil": ["BRST", "BRT", "South America Daylight Time", "South America Standard Time"],
-        "Sofia": ["EET", "EEST", "Eastern European Time", "Eastern European Summer Time"]
+        "Brazil": ["BRST", "BRT", "South America Daylight Time", "South America Standard Time", "GMT-0300"],
+        "Sofia": ["EET", "EEST", "Eastern European Time", "Eastern European Summer Time", "Eastern Europe Daylight Time"]
     };
 
     function tzMatch(alias) {
@@ -341,6 +341,12 @@ var ngTestModule = $.noop, ngTest = $.noop, ngScope;
     }
 
     var app = angular.module('kendo.tests', [ 'kendo.directives' ]);
+
+    /*
+    app.config(['$compileProvider', function($compileProvider) {
+        $compileProvider.debugInfoEnabled(false);
+    }]);
+    */
 
     ngTestModule = function(name, config) {
         if (!config) {

@@ -19,7 +19,8 @@ test("kendoAutoComplete attaches a autocomplete object to target", function() {
 });
 
 test("data source is initialized from options.dataSource when array is passed", function() {
-    var data = [1, 2], autocomplete = new AutoComplete(input, {
+    var data = [1, 2];
+    var autocomplete = new AutoComplete(input, {
         dataSource: data
     });
 
@@ -88,12 +89,70 @@ test("autocomplete populates its list when the datasource changes", function() {
     equal(autocomplete.ul.children("li").first().text(), "foo");
 });
 
-test("changing the template", function() {
+test("autocomplete sets default item template", function() {
+    var autocomplete = new AutoComplete(input);
+
+    var template = autocomplete.listView.options.template;
+
+    equal(template, "#:data#");
+});
+
+test("autocomplete sets default item template using dataTextField option", function() {
     var autocomplete = new AutoComplete(input, {
-        template: kendo.template("#= data.toUpperCase() #")
+        dataTextField: "test"
     });
 
-    equal(autocomplete.template("foo"), '<li tabindex="-1" role="option" unselectable="on" class="k-item">FOO</li>');
+    var template = autocomplete.listView.options.template;
+
+    equal(template, "#:data.test#");
+});
+
+test("autocomplete sets custom item template", function() {
+    var autocomplete = new AutoComplete(input, {
+        template: "#= data.toUpperCase() #"
+    });
+
+    var template = autocomplete.listView.options.template;
+
+    equal(template, "#= data.toUpperCase() #");
+});
+
+test("autocomplete sets a default group template", function() {
+    var autocomplete = new AutoComplete(input, {
+    });
+
+    var template = autocomplete.listView.options.groupTemplate;
+
+    equal(template, "#:data#");
+});
+
+test("autocomplete supports setting a custom group template", function() {
+    var autocomplete = new AutoComplete(input, {
+        groupTemplate: "#= data.toUpperCase() #"
+    });
+
+    var template = autocomplete.listView.options.groupTemplate;
+
+    equal(template, "#= data.toUpperCase() #");
+});
+
+test("autocomplete sets a default fixed group template", function() {
+    var autocomplete = new AutoComplete(input, {
+    });
+
+    var template = autocomplete.listView.options.fixedGroupTemplate;
+
+    equal(template, "#:data#");
+});
+
+test("autocomplete supports setting a custom fixed group template", function() {
+    var autocomplete = new AutoComplete(input, {
+        fixedGroupTemplate: "#= data.toUpperCase() #"
+    });
+
+    var template = autocomplete.listView.options.fixedGroupTemplate;
+
+    equal(template, "#= data.toUpperCase() #");
 });
 
 test("defining header template", function() {
@@ -123,7 +182,7 @@ test("resetting dataSource detaches the previouse events", 0, function() {
 
     var dataSource = autocomplete.dataSource;
 
-    autocomplete._dataSource();
+    autocomplete.setDataSource({});
 
     autocomplete.bind("dataBound", function() {
         ok(false, "Change event is not detached");
@@ -200,7 +259,7 @@ test("AutoComplete creates loading element", function() {
 
     ok(autocomplete._loading);
 });
-
+/*
 asyncTest("AutoComplete shows loading icon on progress", 1, function() {
     var autocomplete = new AutoComplete(input);
 
@@ -224,7 +283,7 @@ asyncTest("AutoComplete hides loading icon on dataSource change", 1, function() 
         start();
     }, 200);
 });
-
+*/
 test("AutoComplete sets ignoreCase option to false", function() {
     var autocomplete = new AutoComplete(input, {
         dataTextField: "ID",
@@ -324,6 +383,91 @@ test("AutoComplete uses input value if options.value is null", function() {
     var autocomplete = new AutoComplete(input.val("test"));
 
     equal(input.val(), "test");
+});
+
+test("AutoComplete adds scrollbar width to the fixed group header padding", function() {
+    var dataSource = new kendo.data.DataSource({
+        data: [
+            { value: 1 },
+            { value: 2 },
+            { value: 3 },
+            { value: 4 },
+            { value: 5 }
+        ],
+        group: "value"
+    });
+
+    var autocomplete = input.kendoAutoComplete({
+        dataSource: dataSource,
+        height: 50
+    }).data("kendoAutoComplete");
+
+    var padding = autocomplete.list.find(".k-group-header").css("padding-right");
+
+    ok(parseFloat(padding) > 15);
+});
+
+test("AutoComplete does not add scrollbar width if popup is shorter then options.height", function() {
+    var dataSource = new kendo.data.DataSource({
+        data: [
+            { value: 1 },
+            { value: 2 },
+            { value: 3 },
+            { value: 4 },
+            { value: 5 }
+        ],
+        group: "value"
+    });
+
+    var autocomplete = input.kendoAutoComplete({
+        dataSource: dataSource,
+        height: 350
+    }).data("kendoAutoComplete");
+
+    autocomplete.dataSource.read();
+    autocomplete.popup.open();
+
+    var padding = autocomplete.list.find(".k-group-header").css("padding-right");
+
+    ok(parseFloat(padding) < 15);
+});
+
+test("setOptions updates listView template when dataTextField is set", function() {
+    var autocomplete = new AutoComplete(input, {
+        dataSource: [{ name: "item1", anotherName: "anotherItem1" }],
+        dataTextField: "name",
+        filter: "startswith"
+    });
+
+    autocomplete.dataSource.read();
+
+    autocomplete.setOptions({
+        dataTextField: "anotherName"
+    });
+
+    equal(autocomplete.listView.options.template, "#:data.anotherName#");
+});
+
+test("setOptions updates listView dataValueField when dataTextField is set", function() {
+    var autocomplete = new AutoComplete(input, {
+        dataSource: [{ name: "item1", anotherName: "anotherItem1" }],
+        dataTextField: "name",
+        filter: "startswith"
+    });
+
+    autocomplete.dataSource.read();
+
+    autocomplete.setOptions({
+        dataTextField: "anotherName"
+    });
+
+    equal(autocomplete.listView.options.dataValueField, "anotherName");
+});
+
+test("AutoComlete is disabled when placed in disabled fieldset", function() {
+     $(input).wrap('<fieldset disabled="disabled"></fieldset>');
+     input.kendoAutoComplete().data("kendoAutoComplete");
+     equal(input.attr("disabled"), "disabled");
 });
 
 }());

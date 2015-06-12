@@ -2,6 +2,8 @@
     var MultiSelect = kendo.ui.MultiSelect,
         select;
 
+    var CONTAINER_HEIGHT = 200;
+
     function popuplateSelect() {
         var options = [];
         for (var i=0; i < 5; i++) {
@@ -84,8 +86,36 @@
     test("MultiSelect builds templates", function() {
         var multiselect = new MultiSelect(select);
 
-        ok(multiselect.itemTemplate);
         ok(multiselect.tagTemplate);
+    });
+
+    test("multiselect sets default item template", function(){
+        multiselect = new MultiSelect(select);
+
+        var template = multiselect.listView.options.template;
+
+        equal(template, "#:data#");
+    });
+
+    test("template should use defined datatextField", function(){
+        multiselect = new MultiSelect(select, {
+            dataTextField : "ProductName"
+        });
+
+        var template = multiselect.listView.options.template;
+
+        equal(template, "#:data.ProductName#");
+    });
+
+    test("changing the template", function() {
+        multiselect = new MultiSelect(select, {
+            datatextField: "",
+            template: "#= data.toUpperCase() #"
+        });
+
+        var template = multiselect.listView.options.template;
+
+        equal(template, "#= data.toUpperCase() #");
     });
 
     test("MultiSelect renders header template", function() {
@@ -128,7 +158,7 @@
         ok(multiselect.ul);
         ok(multiselect.ul.is("ul"));
         ok(multiselect.list.attr("id"), select.attr("id") + "-list");
-        equal(multiselect.ul.css("overflow"), "auto");
+        equal(multiselect.listView.content.css("overflow"), "auto");
     });
 
     test("MultiSelect calls value method on init", function() {
@@ -158,7 +188,6 @@
         equal(searchText.css("text-transform"), input.css("text-transform"));
         equal(searchText.css("letter-spacing"), input.css("letter-spacing"));
     });
-
 
     /*test("multiselect can be initialized in hidden container", function() {
         popuplateSelect();
@@ -209,6 +238,50 @@
         equal(multiselect.list.css("height"), "50px");
     });
 
+    test("MultiSelect adds scrollbar width to the fixed group header padding", function() {
+        var dataSource = new kendo.data.DataSource({
+            data: [
+                { value: 1 },
+                { value: 2 },
+                { value: 3 },
+                { value: 4 },
+                { value: 5 }
+            ],
+            group: "value"
+        });
+
+        var multiselect = select.kendoMultiSelect({
+            dataSource: dataSource,
+            height: 50
+        }).data("kendoMultiSelect");
+
+        var padding = multiselect.list.find(".k-group-header").css("padding-right");
+
+        ok(parseFloat(padding) >= kendo.support.scrollbar());
+    });
+
+    test("MultiSelect does not add scrollbar width to the fixed group header padding if popup has not scroll", function() {
+        var dataSource = new kendo.data.DataSource({
+            data: [
+                { value: 1 },
+                { value: 2 },
+                { value: 3 },
+                { value: 4 },
+                { value: 5 }
+            ],
+            group: "value"
+        });
+
+        var multiselect = select.kendoMultiSelect({
+            dataSource: dataSource,
+            height: 350
+        }).data("kendoMultiSelect");
+
+        var padding = multiselect.list.find(".k-group-header").css("padding-right");
+
+        ok(parseFloat(padding) < 15);
+    });
+
     test("MultiSelect uses select.value on init", function() {
         popuplateSelect();
         select.val("0");
@@ -216,13 +289,6 @@
         var multiselect = new MultiSelect(select);
 
         equal(multiselect.tagList.children().length, 1);
-    });
-
-    test("MultiSelect creates loading element", function() {
-        popuplateSelect();
-        var multiselect = new MultiSelect(select);
-
-        ok(multiselect._loading);
     });
 
     test("MultiSelect creates loading element", function() {
@@ -245,8 +311,8 @@
        });
 
        ok(select.data("kendoMultiSelect").input.attr("disabled"));
-   });
-
+    });
+/*
     asyncTest("MultiSelect shows loading icon on progress", function() {
         popuplateSelect();
         var multiselect = new MultiSelect(select);
@@ -271,7 +337,7 @@
             start();
         }, 200);
     });
-
+*/
     asyncTest("form reset support", 2, function() {
         popuplateSelect();
 
@@ -353,6 +419,25 @@
         multiselect.refresh();
 
         equal(multiselect.current(), null);
+    });
+
+    test("do not highlight when source is paged", function() {
+        var multiselect = new MultiSelect(select, {
+            dataSource: {
+                data: ["Item1", "Item2", "Item3", "Item4", "Item5", "Item6", "Item7", "Item8"],
+                pageSize: 2
+            }
+        });
+
+        stub(multiselect.listView, {
+            first: multiselect.listView.first
+        });
+
+        multiselect.dataSource.read();
+
+        multiselect.dataSource.page(2);
+
+        equal(multiselect.listView.calls("first"), 1);
     });
 
     test("Copy accesskey to the visible input", function() {
@@ -495,5 +580,70 @@
         });
 
         multiselect.search("test");
+    });
+
+    test("copy select title attribute to the visible input", function() {
+        popuplateSelect();
+        var multiselect = select.attr("title", "foo").kendoMultiSelect().data("kendoMultiSelect");
+        var title = select.attr("title");
+
+        equal(multiselect.wrapper.attr("title"), title);
+    });
+
+    test("MultiSelect updates selected text when selected items are changed", function() {
+        var dataSource = new kendo.data.DataSource({
+            data: [
+                { text: "item1", value: 1 },
+                { text: "item2", value: 2 },
+                { text: "item3", value: 3 },
+                { text: "item4", value: 4 },
+                { text: "item5", value: 5 }
+            ]
+        });
+
+        var multiselect = new MultiSelect(select, {
+            dataTextField: "text",
+            dataValueField: "value",
+            dataSource: dataSource,
+            value: ["1", "3", "5"]
+        });
+
+        dataSource.view()[2].set("text", "updated");
+
+        var tags = multiselect.tagList.children();
+
+        equal(tags.length, 3);
+        equal(tags.eq(1).children(":first").text(), "updated");
+    });
+
+    test("MultiSelect updates selected value when selected items are changed", function() {
+        var dataSource = new kendo.data.DataSource({
+            data: [
+                { text: "item1", value: 1 },
+                { text: "item2", value: 2 },
+                { text: "item3", value: 3 },
+                { text: "item4", value: 4 },
+                { text: "item5", value: 5 }
+            ]
+        });
+
+        var multiselect = new MultiSelect(select, {
+            dataTextField: "text",
+            dataValueField: "value",
+            dataSource: dataSource,
+            value: [1, 3, 5]
+        });
+
+        dataSource.view()[2].set("value", "updated");
+
+        var options = multiselect.element.children();
+
+        equal(options.eq(2).val(), "updated");
+    });
+
+    test("MultiSelect is disabled when placed in disabled fieldset", function() {
+        $(select).wrap('<fieldset disabled="disabled"></fieldset>');
+        select.kendoMultiSelect().data("kendoMultiSelect");
+        equal(select.attr("disabled"), "disabled");
     });
 })();

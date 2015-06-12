@@ -320,4 +320,34 @@ test("DateTimePicker sets max from max attribute", function() {
     deepEqual(datetimepicker.max(), date);
 });
 
+test("DateTimePicker is disabled when placed in disabled fieldset", function() {
+    $(input).wrap('<fieldset disabled="disabled"></fieldset>');
+    input.kendoDateTimePicker().data("kendoDateTimePicker");
+    equal(input.attr("disabled"), "disabled");
+});
+
+test("DateTimePicker parseFormats contains default ISO formats if no parseFromats are configured", function() {
+    var datetimepicker = input.kendoDateTimePicker().data("kendoDateTimePicker");
+    var dateFormat = $.inArray('yyyy-MM-dd', datetimepicker.options.parseFormats) > -1
+    var timeFormat = $.inArray('yyyy-MM-ddTHH:mm:ss', datetimepicker.options.parseFormats) > -1
+
+    ok(dateFormat);
+    ok(timeFormat);
+});
+
+test("DateTimePicker max and min values are reset to initial when form is reset", function() {
+    $(input).wrap("<form id='form'></form>");
+    var datetimepicker = input.kendoDateTimePicker({
+        min: new Date(2000, 0, 1, 22, 0, 0),
+        max: new Date(2000, 0, 2, 22, 0, 0)
+    }).data("kendoDateTimePicker")
+
+    datetimepicker.setOptions({
+        max: new Date(2000, 0, 1, 23, 0, 0)
+    });
+
+    $("form")[0].reset();
+    deepEqual(datetimepicker.options.max, new Date(2000, 0, 2, 22, 0, 0));
+});
+
 })();

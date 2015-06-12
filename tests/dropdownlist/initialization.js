@@ -149,9 +149,9 @@
     });
 
     test("data source is initialized from OPTION items", function() {
-        var select = $("<select><option value=1>Chai</option><option value=2 selected='selected'>Chai</option></select>").appendTo(QUnit.fixture),
-        dropdownlist = new DropDownList(select),
-        data;
+        var select = $("<select><option value=1>Chai</option><option value=2 selected='selected'>Chai</option></select>").appendTo(QUnit.fixture);
+        var dropdownlist = new DropDownList(select);
+        var data;
 
         data = dropdownlist.dataSource.view();
 
@@ -179,9 +179,9 @@
         equal(dropdownlist.options.index, 2);
     });
 
-    test("selected index is get from select element", function() {
-        var select = $("<select><option value='1'>Chai</option><option value='2' selected='selected'>Chai</option></select>").appendTo(QUnit.fixture),
-            dropdownlist = new DropDownList(select);
+    test("selected index is got from select element", function() {
+        var select = $("<select><option value='1'>Chai</option><option value='2' selected='selected'>Chai</option></select>").appendTo(QUnit.fixture);
+        var dropdownlist = new DropDownList(select);
 
         equal(select[0].selectedIndex, 1);
         equal(dropdownlist.options.index, 1);
@@ -218,7 +218,7 @@
         ok(dropdownlist.ul);
         ok(dropdownlist.ul.is("ul"));
         ok(dropdownlist.list.attr("id"), input.attr("id") + "-list");
-        equal(dropdownlist.ul.css("overflow"), "auto");
+        equal(dropdownlist.listView.content.css("overflow"), "auto");
     });
 
     test("dropdownlist initializes a popup for its items", function() {
@@ -252,6 +252,7 @@
     test("dropdownlist populates its list when the datasource changes", function() {
         var dropdownlist = new DropDownList(input, {
             dataTextField: "text",
+            dataValueField: "text",
             dataSource: [{text: "foo"}, {text:2}]
         });
 
@@ -261,36 +262,67 @@
         equal(dropdownlist.ul.children("li").first().text(), "foo");
     });
 
-    test("template should render item directly if datatextField is empty string", function(){
-        var dropdownlist = new DropDownList(input, { dataTextField : ""});
+    test("dropdownlist creates static list view", function() {
+        var dropdownlist = new DropDownList(input);
 
-        equal(dropdownlist.template("foo"), '<li tabindex="-1" role="option" unselectable="on" class="k-item">foo</li>');
+        ok(dropdownlist.listView instanceof kendo.ui.StaticList);
     });
 
-    test("template should use defined datatextField", function(){
+    test("dropdownlist sets default item template", function() {
         var dropdownlist = new DropDownList(input, {
-            dataTextField : "ProductName"
         });
 
-        equal(dropdownlist.template({ProductName: "foo"}), '<li tabindex="-1" role="option" unselectable="on" class="k-item">foo</li>');
+        var template = dropdownlist.listView.options.template;
+
+        equal(template, "#:data#");
     });
 
-    test("setting dataTextField to array accessor", function(){
+    test("dropdownlist sets default item template using dataTextField option", function() {
         var dropdownlist = new DropDownList(input, {
-            dataTextField : "['ProductName']"
+            dataTextField: "test"
         });
 
-        equal(dropdownlist.template({ProductName: "foo"}), '<li tabindex="-1" role="option" unselectable="on" class="k-item">foo</li>');
+        var template = dropdownlist.listView.options.template;
+
+        equal(template, "#:data.test#");
     });
 
-    test("changing the template", function() {
+    test("dropdownlist sets a default group template", function() {
         var dropdownlist = new DropDownList(input, {
-            datatextField: "",
-            template: "#= data.toUpperCase() #"
         });
 
-        equal(dropdownlist.template("foo"), '<li tabindex="-1" role="option" unselectable="on" class="k-item">FOO</li>');
-        equal(dropdownlist.options.template, "#= data.toUpperCase() #");
+        var template = dropdownlist.listView.options.groupTemplate;
+
+        equal(template, "#:data#");
+    });
+
+    test("dropdownlist supports setting a custom group template", function() {
+        var dropdownlist = new DropDownList(input, {
+            groupTemplate: "#= data.toUpperCase() #"
+        });
+
+        var template = dropdownlist.listView.options.groupTemplate;
+
+        equal(template, "#= data.toUpperCase() #");
+    });
+
+    test("dropdownlist sets a default fixed group template", function() {
+        var dropdownlist = new DropDownList(input, {
+        });
+
+        var template = dropdownlist.listView.options.fixedGroupTemplate;
+
+        equal(template, "#:data#");
+    });
+
+    test("dropdownlist supports setting a custom fixed group template", function() {
+        var dropdownlist = new DropDownList(input, {
+            fixedGroupTemplate: "#= data.toUpperCase() #"
+        });
+
+        var template = dropdownlist.listView.options.fixedGroupTemplate;
+
+        equal(template, "#= data.toUpperCase() #");
     });
 
     test("defining header template", function() {
@@ -302,6 +334,30 @@
         var list = dropdownlist.list;
 
         equal(list.children()[0].outerHTML, "<div>Header</div>");
+    });
+
+    test("defining option label template", function() {
+        var dropdownlist = new DropDownList(input, {
+            optionLabel: "Select...",
+            optionLabelTemplate: "#= data.toUpperCase() #",
+            headerTemplate: "<div>Header</div>"
+        });
+
+        var optionHeader = dropdownlist.list.children(":first");
+
+        equal(optionHeader[0].outerHTML, '<div class="k-list-optionlabel k-state-selected k-state-focused">SELECT...</div>');
+    });
+
+    test("optionLabel template supports complex object", function() {
+        var dropdownlist = new DropDownList(input, {
+            dataTextField: "name",
+            optionLabel: { name: "Select..." },
+            headerTemplate: "<div>Header</div>",
+        });
+
+        var optionHeader = dropdownlist.list.children(":first");
+
+        equal(optionHeader[0].outerHTML, '<div class="k-list-optionlabel k-state-selected k-state-focused">Select...</div>');
     });
 
     test("defining input template", function() {
@@ -386,31 +442,6 @@
         ok(!wrap.hasClass("k-state-hover"));
     });
 
-    test("pointer over li should add hover state", function() {
-        var data = [{text: 1, value: 1}, {text:2, value:2}],
-        dropdownlist = new DropDownList(input, {
-            dataSource: data
-        });
-
-        var li = dropdownlist.ul.show().children().eq(0);
-        li.mouseenter();
-
-        ok(li.hasClass("k-state-hover"));
-    });
-
-    test("leave li should remove hover state", function() {
-        var data = [{text: 1, value: 1}, {text:2, value:2}],
-        dropdownlist = new DropDownList(input, {
-            dataSource: data
-        });
-
-        var li = dropdownlist.ul.show().children().eq(0);
-        li.mouseenter();
-        li.mouseleave();
-
-        ok(!li.hasClass("k-state-hover"));
-    });
-
     test("add k-list class to the UL", function() {
         var data = [{text: 1, value: 1}, {text:2, value:2}],
         dropdownlist = new DropDownList(input, {
@@ -437,6 +468,8 @@
     });
 
     test("persist selected index on rebind", function() {
+        select[0].selectedIndex = -1;
+
         var dropdownlist = new DropDownList(select, {
             dataTextField: "text",
             dataValueField: "value",
@@ -446,68 +479,36 @@
 
         dropdownlist.dataSource.fetch();
 
-        equal(dropdownlist.value(), "");
         equal(dropdownlist.text(), "Select...");
-    });
-
-    test("optionLabel should create empty item", function() {
-        var data = [{text: 1, value: 1}, {text:2, value:2}],
-        dropdownlist = new DropDownList(input, {
-            dataTextField: "text",
-            dataValueField: "value",
-            dataSource: data,
-            optionLabel: "Select..."
-        });
-
-        equal(dropdownlist._data()[0].text, "Select...");
-        equal(dropdownlist._data()[0].value, "");
+        equal(dropdownlist.value(), "");
     });
 
     test("optionLabel is not lost when textField and valueField are equal", function() {
-        var data = [{text: 1, value: 1}, {text:2, value:2}],
-        dropdownlist = new DropDownList(input, {
+        var data = [{text: 1, value: 1}, {text:2, value:2}];
+        var dropdownlist = new DropDownList(input, {
             dataTextField: "text",
             dataValueField: "text",
             dataSource: data,
             optionLabel: "Select..."
         });
 
-        equal(dropdownlist._data()[0].text, "Select...");
+        equal(dropdownlist.text(), "Select...");
+        equal(dropdownlist.value(), "");
     });
 
-    test("optionLabel should create complex empty item", function() {
-        var data = [{text: 1, value: 1}, {text:2, value:2}],
-        dropdownlist = new DropDownList(input, {
-            dataTextField: "Order.Ship.City",
-            dataValueField: "Order1.Ship1.City1",
+    test("dropdownlist supports complex optionLabel", function() {
+        var data = [{text: 1, value: 1}, {text:2, value:2}];
+        var dropdownlist = new DropDownList(input, {
+            dataTextField: "Order.Ship.Desc",
+            dataValueField: "Order.Ship.City",
             dataSource: [
-                { Order: { Ship: { City: "1"} } }
+                { Order: { Ship: { Desc: "City1", City: "1" } } }
             ],
-            optionLabel: "Select..."
+            optionLabel: { Order: { Ship: { Desc: "Select..." } } }
         });
 
-        var first = dropdownlist._data()[0];
-
-        equal(first.Order.Ship.City, "Select...");
-        equal(first.Order1.Ship1.City1, "");
-    });
-
-    test("Use optionLabel directly if object", function() {
-        var data = [{text: 1, value: 1}, {text:2, value:2}],
-        dropdownlist = new DropDownList(input, {
-            dataTextField: "text",
-            dataValueField: "value",
-            dataSource: data,
-            optionLabel: {
-                text: "Select...",
-                value: "",
-                test: "test"
-            }
-        });
-
-        equal(dropdownlist._data()[0].text, "Select...");
-        equal(dropdownlist._data()[0].value, "");
-        equal(dropdownlist._data()[0].test, "test");
+        equal(dropdownlist.text(), "Select...");
+        equal(dropdownlist.value(), "");
     });
 
     test("_options should render option with value if optionLabel", function() {
@@ -634,7 +635,8 @@
     });
 
     test("set selected text on init if autoBind:false (select)", function() {
-        var dropdownlist = new DropDownList($("<select><option>text</option></select>").appendTo(QUnit.fixture), {
+        var select = $("<select><option>text</option></select>").appendTo(QUnit.fixture);
+        var dropdownlist = new DropDownList(select, {
             autoBind: false,
             optionLabel: "Select...",
             index: 1
@@ -702,7 +704,7 @@
 
         var dataSource = dropdownlist.dataSource;
 
-        dropdownlist._dataSource();
+        dropdownlist.setDataSource([]);
 
         dropdownlist.bind("dataBound", function() {
             ok(false, "Change event is not detached");
@@ -733,16 +735,6 @@
         });
 
         equal(dropdownlist.popup.options.appendTo[0], $(appendTo)[0]);
-    });
-
-    test("dropdownlist initializes a touch scroller when in mobile", function() {
-        kendo.support.kineticScrollNeeded = true;
-        kendo.support.mobileOS = kendo.support.detectOS("iPhone OS 4_3");
-
-        var dropdownlist = new DropDownList($("<input/>").appendTo(QUnit.fixture));
-
-        ok(dropdownlist.popup.element.hasClass("km-scroll-wrapper"));
-        kendo.support.kineticScrollNeeded = false;
     });
 
     test("dropdownlist can be initialized in hidden container", function() {
@@ -820,18 +812,10 @@
         equal(dropdownlist.value(), "1");
     });
 
-    function generate() {
-        var data = [];
-        for (var idx = 0; idx < 20; idx++) {
-            data.push("item" + idx);
-        }
-        return data;
-    }
-
     test("DropDownList set height on first open", function() {
         var fixture = $("#qunit-fixture").hide();
         var dropdownlist = new DropDownList(input, {
-            dataSource: generate(),
+            dataSource: generate(20),
             popup: {
                 appendTo: "#qunit-fixture"
             }
@@ -916,12 +900,14 @@
             filter: "startswith"
         });
 
-        var filterHeader = dropdownlist.list.children().first();
+        var filterHeader = dropdownlist.list.find(".k-list-filter");
 
         ok(filterHeader.hasClass("k-list-filter"));
         ok(filterHeader.find("input")[0]);
     });
 
+    //TODO: offset height correctly
+    /*
     test("adjust ul height if filter header is rendered", function() {
         var dropdownlist = new DropDownList(input, {
             dataSource: ["item1", "item2", "item3", "item4", "item5"],
@@ -937,6 +923,7 @@
 
         equal(dropdownlist.ul.height(), height);
     });
+    */
 
     test("widget renders search icon in filter header", function() {
         var dropdownlist = new DropDownList(input, {
@@ -947,7 +934,7 @@
             filter: "startswith"
         });
 
-        var filterHeader = dropdownlist.list.children().first();
+        var filterHeader = dropdownlist.list.find(".k-list-filter");
         var icon = filterHeader.find("input").next();
 
         ok(icon[0]);
@@ -968,4 +955,227 @@
         equal(dropdownlist.options.dataTextField, "Orders.ShipCity");
         equal(dropdownlist.options.dataValueField, "OrderID");
     });
+
+    function generate(count) {
+        var data = [];
+        for (var idx = 0; idx < count; idx++) {
+            data.push(idx);
+        }
+
+        return data;
+    }
+
+    test("DropDownList scrolls list to the focused element", function() {
+        var dropdownlist = new DropDownList(input, {
+            dataSource: generate(50)
+        });
+
+        dropdownlist.value("30");
+        dropdownlist.open();
+
+        ok(dropdownlist.listView.content[0].scrollTop > 50);
+    });
+
+    test("DropDownList adds scrollbar width to the fixed group header padding", function() {
+        var dataSource = new kendo.data.DataSource({
+            data: [
+                { value: 1 },
+                { value: 2 },
+                { value: 3 },
+                { value: 4 },
+                { value: 5 }
+            ],
+            group: "value"
+        });
+
+        var dropdownlist = input.kendoDropDownList({
+            dataSource: dataSource,
+            height: 50
+        }).data("kendoDropDownList");
+
+        var padding = dropdownlist.list.find(".k-group-header").css("padding-right");
+
+        ok(parseFloat(padding) >= kendo.support.scrollbar());
+    });
+
+    test("DropDownList does not add scrollbar width to the fixed group header padding if popup has not scroll", function() {
+        var dataSource = new kendo.data.DataSource({
+            data: [
+                { value: 1 },
+                { value: 2 },
+                { value: 3 },
+                { value: 4 },
+                { value: 5 }
+            ],
+            group: "value"
+        });
+
+        var dropdownlist = input.kendoDropDownList({
+            dataSource: dataSource,
+            height: 350
+        }).data("kendoDropDownList");
+
+        var padding = dropdownlist.list.find(".k-group-header").css("padding-right");
+
+        ok(parseFloat(padding) < 15);
+    });
+
+    test("pointer over optionLabel should adds hover state", function() {
+        var dropdownlist = new DropDownList(input, {
+            optionLabel: "Select..."
+        });
+
+        dropdownlist.open();
+
+        var optionLabel = dropdownlist.optionLabel;
+
+        optionLabel.mouseenter();
+
+        ok(optionLabel.hasClass("k-state-hover"));
+    });
+
+    test("leave optionLabel should remove hover state", function() {
+        var dropdownlist = new DropDownList(input, {
+            optionLabel: "Select..."
+        });
+
+        dropdownlist.open();
+
+        var optionLabel = dropdownlist.optionLabel;
+
+        optionLabel.mouseenter();
+        optionLabel.mouseleave();
+
+        ok(!optionLabel.hasClass("k-state-hover"));
+    });
+
+    test("copy input title attribute to the visible input", function() {
+        var dropdown = input.attr("title", "foo").kendoDropDownList(["item"]).data("kendoDropDownList");
+        var title = input.attr("title");
+
+        equal(dropdown.wrapper.attr("title"), title);
+    });
+
+    test("DropDownList displays optionLabel when autoBind: false and text is not defined", function() {
+        var data = [
+            { text: "Black", value: "1" },
+            { text: "Orange", value: "2" },
+            { text: "Grey", value: "3" }
+        ];
+
+        var optionLabel = "Select color...";
+
+        var dropdownlist = input.val("0").kendoDropDownList({
+            autoBind: false,
+            optionLabel: optionLabel,
+            dataTextField: "text",
+            dataValueField: "value",
+            dataSource: data
+        }).data("kendoDropDownList");
+
+        equal(dropdownlist.text(), optionLabel);
+    });
+
+    test("DropDownList updates selected text when selected item is changed", function() {
+        var dataSource = new kendo.data.DataSource({
+            data: [
+                { text: "item1", value: 1 },
+                { text: "item2", value: 2 },
+                { text: "item3", value: 3 },
+                { text: "item4", value: 4 },
+                { text: "item5", value: 5 }
+            ]
+        });
+
+        dropdownlist = input.kendoDropDownList({
+            dataTextField: "text",
+            dataValueField: "value",
+            dataSource: dataSource,
+            value: "3"
+        }).data("kendoDropDownList");
+
+        dataSource.view()[2].set("text", "updated");
+
+        equal(dropdownlist.span.text(), "updated");
+    });
+
+    test("DropDownList updates the selected text on source rebind", function() {
+        var data = [
+            { name: "item", value: 1, group: "a" },
+            { name: "item2", value: 2, group: "b" }
+        ];
+
+        dropdownlist = input.kendoDropDownList({
+            dataSource: {
+                transport: {
+                    read: function(options) {
+                        options.success(data);
+                    }
+                }
+            },
+            dataValueField: "value",
+            dataTextField: "name",
+            value: 1
+        }).data("kendoDropDownList");
+
+        data[0].name = "Item new";
+
+        dropdownlist.dataSource.read();
+
+        equal(dropdownlist.text(), "Item new");
+    });
+
+    asyncTest("DropDownList displays optionLabel when value is cleared until the widget is not bound", 1, function() {
+        dropdownlist = input.kendoDropDownList({
+          optionLabel: "--Select Value--",
+          dataTextField: "Name",
+          dataValueField: "Name",
+          dataSource: new kendo.data.DataSource({
+            schema: {
+              model: {
+                id: "StateId"
+              }
+            },
+            transport: {
+              read: function(options) {
+                setTimeout(function() {
+                  options.success([
+                    { Name: "foo" }
+                  ]);
+                });
+              }
+            }
+          })
+        }).data("kendoDropDownList");
+
+        dropdownlist.one("dataBound", function() {
+            start();
+
+            equal(dropdownlist.text(), dropdownlist.options.optionLabel);
+        });
+
+        dropdownlist.value("");
+    });
+
+    test("DropDownList does not trigger cascade event on click when source is empty", 0, function() {
+        dropdownlist = input.kendoDropDownList({
+          optionLabel: "--Select Value--",
+          dataTextField: "Name",
+          dataValueField: "Name",
+          dataSource: []
+        }).data("kendoDropDownList");
+
+        dropdownlist.one("cascade", function() {
+            ok(false);
+        });
+
+        dropdownlist.wrapper.click();
+    });
+
+    test("DropDownList is disabled when placed in disabled fieldset", function() {
+         $(input).wrap('<fieldset disabled="disabled"></fieldset>');
+         input.kendoDropDownList().data("kendoDropDownList");
+         equal(input.attr("disabled"), "disabled");
+    });
+
 })();

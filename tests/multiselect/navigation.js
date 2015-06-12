@@ -115,20 +115,6 @@
         ok(multiselect.current().hasClass("k-state-focused"));
     });
 
-    test("MultiSelect does not open popup if no visible items", function() {
-        populateSelect(1);
-        var multiselect = new MultiSelect(select);
-
-        multiselect.value("0");
-
-        multiselect.input.focus().trigger({
-            type: "keydown",
-            keyCode: keys.DOWN
-        });
-
-        ok(!multiselect.popup.visible());
-    });
-
     test("MultiSelect highlights prev LI", function() {
         var multiselect = new MultiSelect(select);
 
@@ -156,15 +142,6 @@
         });
 
         ok(!multiselect.popup.visible());
-    });
-
-    test("MultiSelect clears current highlighted on close", function() {
-        var multiselect = new MultiSelect(select);
-
-        multiselect.open();
-        multiselect.close();
-
-        equal(multiselect.current(), null)
     });
 
     test("MultiSelect selects current highlighted on ENTER", function() {
@@ -224,14 +201,10 @@
         populateSelect(50);
         var multiselect = new MultiSelect(select);
 
-        //opens popup and scrolls
-        multiselect.open();
-        multiselect.ul[0].scrollTop = 50;
-
-        multiselect.close();
+        multiselect.value(["30"]);
         multiselect.open();
 
-        ok(multiselect.ul[0].scrollTop < 50);
+        ok(multiselect.listView.content[0].scrollTop > 50);
     });
 
     module("kendo.ui.MultiSelect tag navigation", {
@@ -359,7 +332,6 @@
         equal(tag, null);
     });
 
-
     test("MultiSelect deletes focused tag", function() {
         var multiselect = new MultiSelect(select);
 
@@ -376,6 +348,29 @@
 
         equal(multiselect.currentTag(), null);
         equal(multiselect.tagList.children().length, 1);
+    });
+
+    test("MultiSelect deletes focused tag when source is filtered", function() {
+        var multiselect = new MultiSelect(select);
+
+        multiselect.search("Option1");
+        multiselect.ul.children(":first").click();
+
+        multiselect.search("Option2");
+        multiselect.ul.children(":first").click();
+
+        multiselect.currentTag(multiselect.tagList.children().first());
+
+        multiselect.input.trigger({
+            type: "keydown",
+            keyCode: keys.DELETE
+        });
+
+        multiselect.open();
+
+        equal(multiselect.currentTag(), null);
+        equal(multiselect.tagList.children().length, 1);
+        equal(multiselect.tagList.children().eq(0).text().indexOf("Option2"), 0);
     });
 
     test("MultiSelect deletes last tag on BACKSPACE if input is empty", function() {

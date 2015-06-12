@@ -378,7 +378,8 @@ body .k-datetimepicker .k-select
     border-width: 1px;
 }
 
-.k-popup .k-item
+.k-popup .k-item,
+.k-list-optionlabel
 {
     cursor: default;
 }
@@ -394,11 +395,20 @@ body .k-datetimepicker .k-select
 }
 
 .k-popup .k-list .k-item,
-.k-fieldselector .k-list .k-item
+.k-fieldselector .k-list .k-item,
+.k-list-optionlabel,
+.k-popup > .k-group-header,
+.k-popup > .k-virtual-wrap > .k-group-header
 {
     padding: 1px 5px 1px 5px;
     line-height: 1.8em;
     min-height: 1.8em;
+}
+
+.k-popup > .k-group-header,
+.k-popup > .k-virtual-wrap > .k-group-header
+{
+    padding-right: 22px;
 }
 
 .k-overflow-container .k-item
@@ -420,7 +430,9 @@ body .k-datetimepicker .k-select
 .k-overflow-container .k-state-hover,
 .k-overflow-container .k-state-focused,
 .k-overflow-container .k-state-selected,
-.k-fieldselector .k-list .k-item
+.k-fieldselector .k-list .k-item,
+.k-list-optionlabel.k-state-focused,
+.k-list-optionlabel.k-state-selected
 {
     padding: 0 4px;
     border-width: 1px;
@@ -441,8 +453,8 @@ body .k-datetimepicker .k-select
 .k-list-filter > .k-icon
 {
     position: absolute;
-    right: 4px;
-    top: 3px;
+    right: 6px;
+    top: 1px;
 }
 
 /* MultiSelect */
@@ -473,9 +485,10 @@ body .k-datetimepicker .k-select
 .k-multiselect-wrap li
 {
     margin: 1px 0 1px 1px;
-    padding: .1em .15em .1em .4em;
+    padding: .1em 1.6em .1em .4em;
     line-height: (@input-height - .15);
     float: left;
+    position: relative;
 }
 
 .k-autocomplete .k-loading,
@@ -489,6 +502,15 @@ body .k-datetimepicker .k-select
 .k-multiselect .k-loading-hidden
 {
     visibility: hidden;
+}
+
+.k-multiselect-wrap .k-select
+{
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    padding: .1em .2em;
 }
 
 /* Date/Time Pickers */
@@ -550,14 +572,19 @@ body .k-datetimepicker .k-select
 .k-textbox
 {
     outline: 0;
+}
+
+input.k-textbox,
+textarea.k-textbox
+{
     padding: 2px .3em;
-    line-height: 1.6em;
 }
 
 input.k-textbox
 {
     height: (@input-height + 0.48em);
     text-indent: @input-indent;
+    line-height: 1.6em;
 }
 
 .k-ie input.k-textbox

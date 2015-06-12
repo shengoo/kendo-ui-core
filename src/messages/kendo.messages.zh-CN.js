@@ -1,3 +1,4 @@
+(function ($, undefined) {
 /* FlatColorPicker messages */
 
 if (kendo.ui.FlatColorPicker) {
@@ -256,6 +257,8 @@ $.extend(true, kendo.ui.Grid.prototype.options.messages,{
     "create": "新增",
     "destroy": "删除",
     "edit": "编辑",
+    "excel": "Export to Excel",
+    "pdf": "Export to PDF",
     "save": "保存",
     "select": "选择",
     "update": "更新"
@@ -264,7 +267,8 @@ $.extend(true, kendo.ui.Grid.prototype.options.messages,{
     "cancelDelete": "取消",
     "confirmation": "确定要删除吗？",
     "confirmDelete": "删除"
-  }
+  },
+  "noRecords": "没有可用的记录。"
 });
 }
 
@@ -274,6 +278,25 @@ if (kendo.ui.Groupable) {
 kendo.ui.Groupable.prototype.options.messages =
 $.extend(true, kendo.ui.Groupable.prototype.options.messages,{
   "empty": "拖拽列标题到此处按列组合显示"
+});
+}
+
+/* ImageBrowser messages */
+
+if (kendo.ui.ImageBrowser) {
+kendo.ui.ImageBrowser.prototype.options.messages =
+$.extend(true, kendo.ui.ImageBrowser.prototype.options.messages,{
+  "uploadFile": "上传",
+  "orderBy": "排序条件",
+  "orderByName": "名称",
+  "orderBySize": "大小",
+  "directoryNotFound": "此文件夹未找到",
+  "emptyFolder": "文件夹为空",
+  "deleteFile": '您确定要删除 \"{0}\"?',
+  "invalidFileType": "选中的文件 \"{0}\" 非法，支持的文件类型为 {1}。",
+  "overwriteFile": "当前文件夹已存在文件名为 \"{0}\" 的文件，您确定要覆盖么？",
+  "dropFilesHere": "拖拽要上传的文件到此处",
+  "search": "搜索"
 });
 }
 
@@ -482,3 +505,4 @@ $.extend(true, kendo.ui.Validator.prototype.options.messages,{
   "date": "{0} 不是合法的日期"
 });
 }
+})(window.kendo.jQuery);

@@ -158,6 +158,21 @@ test("clicking an item raises the change event of the dom element", 1, function(
     autocomplete.ul.children().first().trigger(CLICK);
 });
 
+test("does not force element's DOM change event when the user manually edits the value and presses 'Enter'", 0, function() {
+    input.kendoAutoComplete({
+        dataSource: ["foo"]
+    });
+
+    input.bind("change", function() {
+        ok(false);
+    });
+
+    input.focus()
+        .trigger($.Event("keydown", {keyCode: 70}))
+        .val("f")
+        .trigger($.Event("keydown", {keyCode: 13}));
+});
+
 test("open event when open popup on search", 1, function() {
     input.kendoAutoComplete({
         delay: 0,
@@ -203,7 +218,7 @@ test("close event when popup close on click", 1, function() {
     var autocomplete = input.data("kendoAutoComplete");
     input.focus().val("f");
     autocomplete.search();
-    autocomplete._accept(autocomplete.ul.eq(0));
+    autocomplete.ul.children().first().click();
 });
 
 test("click item raises select event", 1, function() {
@@ -248,8 +263,28 @@ test("select event is not raised when custom value is entered", 0, function() {
     autocomplete.dataSource.read();
     autocomplete.popup.open();
 
-    //simulate enter
-    autocomplete._focus(null);
+    autocomplete.element.trigger({
+        type: "keydown",
+        keyCode: kendo.keys.ENTER
+    });
+});
+
+test("select event is raised when first item is entered", 1, function() {
+    var autocomplete = input.kendoAutoComplete({
+        dataSource: ["foo"],
+        select: function(e) {
+            ok(true);
+        }
+    }).data("kendoAutoComplete");
+
+    autocomplete.dataSource.read();
+    autocomplete.popup.open();
+    autocomplete.listView.focus(0);
+
+    autocomplete.element.trigger({
+        type: "keydown",
+        keyCode: kendo.keys.ENTER
+    });
 });
 
 test("AutoComplete triggers filtering event on data source filter", 3, function() {
