@@ -339,7 +339,7 @@ var __meta__ = {
             var that = this;
             var page = that.dataSource.page();
 
-            if (that._rangeChange === true && that._lastPage !== page) {
+            if (that.isBound() && that._rangeChange === true && that._lastPage !== page) {
                 that._lastPage = page;
                 that.trigger(LISTBOUND);
             }
@@ -465,6 +465,9 @@ var __meta__ = {
                     value: (this.options.selectable === "multiple") ? value : value[0],
                     success: function(indexes) {
                         that._values = [];
+                        that._selectedIndexes = [];
+                        that._selectedDataItems = [];
+
                         indexes = toArray(indexes);
 
                         if (!indexes.length) {
@@ -661,6 +664,10 @@ var __meta__ = {
             }
         },
 
+        focusIndex: function() {
+            return this._focusedIndex;
+        },
+
         first: function() {
             this.scrollTo(0);
             this.focus(0);
@@ -747,15 +754,15 @@ var __meta__ = {
 
                 that.focus(indices);
 
-                if (that._valueDeferred) {
-                    that._valueDeferred.resolve();
-                }
-
                 if (added.length || removed.length) {
                     that.trigger(CHANGE, {
                         added: added,
                         removed: removed
                     });
+                }
+
+                if (that._valueDeferred) {
+                    that._valueDeferred.resolve();
                 }
             };
 
@@ -1062,10 +1069,9 @@ var __meta__ = {
             return list;
         },
 
-        _itemMapper: function(item, index) {
+        _itemMapper: function(item, index, value) {
             var listType = this.options.type,
                 itemHeight = this.options.itemHeight,
-                value = this._values,
                 currentIndex = this._focusedIndex,
                 selected = false,
                 current = false,
@@ -1089,6 +1095,7 @@ var __meta__ = {
                 for (var i = 0; i < value.length; i++) {
                     match = isPrimitive(item) ? value[i] === item : value[i] === valueGetter(item);
                     if (match) {
+                        value.splice(i , 1);
                         selected = true;
                         break;
                     }
@@ -1112,6 +1119,7 @@ var __meta__ = {
 
         _range: function(index) {
             var itemCount = this.itemCount,
+                value = this._values.slice(),
                 items = [],
                 item;
 
@@ -1119,7 +1127,7 @@ var __meta__ = {
             this._currentGroup = null;
 
             for (var i = index, length = index + itemCount; i < length; i++) {
-                item = this._itemMapper(this.getter(i, index), i);
+                item = this._itemMapper(this.getter(i, index), i, value);
                 items.push(item);
                 this._view[item.index] = item;
             }
